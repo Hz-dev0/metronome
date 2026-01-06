@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>節拍器</title>
+    <style>
+        :root {
+            --bg-page: #F7EDEF; --c-mid: #D6B2BC; --c-light: #EDD3D7; --c-text: #8E6E77;
+            --white: #ffffff; --setting-bg: #F7EDEF; --input-bg: var(--setting-bg); --input-border: #EDD3D7;
+        }
+        [data-theme="purple"] { 
+            --bg-page: #FCF4FC; --c-mid: #D9A2CD; --c-light: #F2D5F2; --c-text: #6a5a6b;      
+            --white: #ffffff; --setting-bg: #F5DDF4; --input-bg: #FCF4FC; --input-border: #F2D5F2;
+        }
+        /* 更新後的藍色主題：對應圖片中的粉藍色 */
+        [data-theme="ocean"] { 
+            --bg-page: #E3F2FD; --c-mid: #90B4D9; --c-light: #C1D5EB; --c-text: #455A64; 
+            --white: #ffffff; --setting-bg: #ECF3F9; --input-bg: #E3F2FD; --input-border: #C1D5EB; 
+        }
+        /* 更新後的綠色主題：對應圖片中的草綠色 */
+        [data-theme="forest"] { 
+            --bg-page: #F1F8E9; --c-mid: #C5E1A5; --c-light: #DCEDC8; --c-text: #558B2F; 
+            --white: #ffffff; --setting-bg: #F9FBF7; --input-bg: #F1F8E9; --input-border: #DCEDC8; 
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; background-color: var(--bg-page);
+            transition: background-color 0.3s; color: var(--c-text);
+            overflow: hidden; position: relative;
+        }
+
+        .folder-tabs { position: absolute; left: 100%; top: 50px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
+        .tab { 
+            width: 14px; height: 35px; border-radius: 0 6px 6px 0; cursor: pointer; border: none; 
+            transition: width 0.2s, opacity 0.2s; opacity: 0.7; box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        }
+        .tab:hover { opacity: 1; width: 18px; }
+        .tab.active { opacity: 1; width: 22px; box-shadow: 3px 2px 8px rgba(0,0,0,0.1); }
+        .tab-rose { background-color: #D6B2BC; } 
+        .tab-purple { background-color: #D9A2CD; } 
+        .tab-ocean { background-color: #90B4D9; } 
+        .tab-forest { background-color: #C5E1A5; }
+
+        .container {
+            background: var(--white); padding: 2.5rem 1.5rem; border-radius: 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.06); text-align: center; 
+            width: 340px; transition: all 0.5s ease; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; position: relative; 
+        }
+        .container.running { width: 100vw; height: 100vh; max-width: 100%; border-radius: 0; box-shadow: none; background: transparent; padding: 0; justify-content: center; }
+
+        .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .btn-round, .running .unit-label { display: none !important; }
+
+        .timer-section { display: none; width: 100%; }
+        .timer-section.active { display: block; }
+        .timer-display { display: flex; justify-content: center; align-items: center; font-weight: 700; color: var(--c-mid); font-variant-numeric: tabular-nums; font-size: 3.5rem; }
+        .running .timer-display { font-size: 10rem; font-weight: 800; margin-bottom: 20px; }
+        .running .timer-display.long-time { font-size: 6rem; }
+        .digit { display: inline-block; text-align: center; width: 0.65em; }
+        .sep { display: inline-block; text-align: center; width: 0.25em; }
+
+        .bpm-controls-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin: 15px 0; }
+        .bpm-text { font-size: 4.2rem; font-weight: 800; color: var(--c-mid); line-height: 0.8; }
+        .unit-label { font-size: 0.8rem; color: var(--c-text); opacity: 0.5; font-weight: bold; margin-top: 8px; letter-spacing: 2px; }
+
+        #breathCircle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.1); width: 80vh; height: 80vh; background-color: var(--c-mid); border-radius: 50%; opacity: 0.15; z-index: -1; display: none; }
+        .btn-round { width: 55px; height: 55px; border-radius: 50%; background-color: var(--white); color: var(--c-mid); border: 2px solid var(--c-light); font-size: 1.8rem; font-weight: bold; cursor: pointer; }
+        .main-controls { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; align-items: center; width: 100%; }
+        .btn-row { display: flex; gap: 12px; width: 100%; justify-content: center; }
+        .btn-base { padding: 18px; font-size: 1.1rem; border: none; border-radius: 22px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-start, .btn-pause, .btn-resume { background-color: var(--c-mid); color: var(--white); width: 100%; max-width: 280px; }
+        .btn-stop { background-color: transparent; color: var(--c-mid); border: 2px solid var(--c-light); width: 100px; }
+
+        .quick-volume { display: none; flex-direction: column; align-items: center; gap: 10px; width: 60%; max-width: 300px; margin-top: 20px; }
+        .running .quick-volume { display: flex; }
+        .vol-icon { font-size: 2.5rem; cursor: pointer; color: var(--c-mid); opacity: 0.8; }
+
+        .settings-grid { display: grid; gap: 12px; margin-top: 25px; text-align: left; background: var(--setting-bg); padding: 18px; border-radius: 30px; width: 100%; box-sizing: border-box; }
+        
+        .breath-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .label-text { font-size: 0.85rem; color: var(--c-mid); font-weight: 800; display: block; }
+        
+        /* 修正後的白條容器：開關關閉時高度為 0 且消失 */
+        .breath-settings { 
+            background: var(--white); border-radius: 20px; 
+            max-height: 0; overflow: hidden; transition: all 0.3s ease-out; 
+            padding: 0 12px; opacity: 0; 
+        }
+        .breath-settings.expanded { 
+            max-height: 120px; padding: 12px; opacity: 1; margin-top: 5px; 
+        }
+
+        #breathInputsWrapper { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .breath-inputs-item { text-align: center; }
+        .breath-inputs-item small { display: block; font-size: 0.7rem; margin-bottom: 3px; opacity: 0.7; }
+        .breath-inputs-item input { width: 100%; padding: 8px 2px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); box-sizing: border-box; }
+
+        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--c-light); transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--c-mid); }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        .mode-switch { display: flex; background: var(--white); border-radius: 15px; padding: 4px; }
+        .mode-btn { flex: 1; padding: 10px; font-size: 0.85rem; background: transparent; color: var(--c-text); border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
+        .mode-btn.active { background: var(--c-mid); color: var(--white); }
+        
+        select { width: 100%; padding: 12px; border-radius: 15px; border: none; font-size: 1rem; color: var(--c-text); background: var(--white); cursor: pointer; }
+        input[type="range"] { width: 100%; accent-color: var(--c-mid); }
+    </style>
+</head>
+<body onclick="initAudio()">
+
+<div id="breathCircle"></div>
+
+<div class="container" id="appContainer">
+    <div class="folder-tabs" id="folderTabs">
+        <div class="tab tab-rose" onclick="setTheme('rose')" id="tab-rose"></div>
+        <div class="tab tab-purple" onclick="setTheme('purple')" id="tab-purple"></div>
+        <div class="tab tab-ocean" onclick="setTheme('ocean')" id="tab-ocean"></div>
+        <div class="tab tab-forest" onclick="setTheme('forest')" id="tab-forest"></div>
+    </div>
+
+    <div id="timerSection" class="timer-section">
+        <div id="timerDisplay" class="timer-display">
+            <span id="hGroup" style="display:none"><span id="h1" class="digit">0</span><span id="h2" class="digit">0</span><span class="sep">:</span></span>
+            <span id="m1" class="digit">0</span><span id="m2" class="digit">0</span><span class="sep">:</span>
+            <span id="s1" class="digit">0</span><span id="s2" class="digit">0</span>
+        </div>
+    </div>
+    
+    <div class="bpm-controls-wrapper">
+        <button class="btn-round" onclick="adjustBPM(-10)">−</button>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <span class="bpm-text" id="bpmValue">180</span>
+            <span class="unit-label">BPM</span>
+        </div>
+        <button class="btn-round" onclick="adjustBPM(10)">+</button>
+    </div>
+    
+    <div id="mainControls" class="main-controls">
+        <div class="btn-row" id="initialBtnRow">
+            <button class="btn-start btn-base" onclick="startRunning()">開始跑步</button>
+        </div>
+        <div class="quick-volume">
+            <div id="volIcon" class="vol-icon" onclick="handleVolClick(event)" ondblclick="handleVolDblClick(event)">🔊</div>
+            <div id="quickVolSlider" style="display:none; width:100%;">
+                <input type="range" id="volumeControlFocus" min="0" max="100" value="50">
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-grid" id="settingsGrid">
+        <div>
+            <div class="breath-header">
+                <span class="label-text">🌬 呼吸引導</span>
+                <label class="switch"><input type="checkbox" id="breathToggle" onchange="toggleBreath()"><span class="slider"></span></label>
+            </div>
+            <div class="breath-settings" id="breathContainer">
+                <div id="breathInputsWrapper">
+                    <div class="breath-inputs-item"><small>吸氣(s)</small><input type="number" id="inhaleTime" value="4" min="1" onchange="saveSettings()"></div>
+                    <div class="breath-inputs-item"><small>保持(s)</small><input type="number" id="holdTime" value="2" min="0" onchange="saveSettings()"></div>
+                    <div class="breath-inputs-item"><small>吐氣(s)</small><input type="number" id="exhaleTime" value="6" min="1" onchange="saveSettings()"></div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="label-text" style="margin-bottom: 5px;">🎧 輸出模式</div>
+            <div class="mode-switch">
+                <button class="mode-btn" id="modeEarphone" onclick="setMode('earphone')">耳機</button>
+                <button class="mode-btn" id="modeSpeaker" onclick="setMode('speaker')">喇叭</button>
+            </div>
+        </div>
+        <div>
+            <div class="label-text" style="margin-bottom: 5px;">🎵 選擇音色</div>
+            <select id="soundType" onchange="handleSoundChange(this)">
+                <option value="electronic">電子點擊 (經典)</option>
+                <option value="woodblock" selected>圓潤木魚 (推薦)</option>
+                <option value="kick">深沉大鼓 (低音)</option>
+                <option value="bell">清脆銅鈴 (高音)</option>
+                <option value="beep">數位嗶聲 (計時器)</option>
+                <option value="water">柔和水滴 (安靜)</option>
+            </select>
+        </div>
+        <div>
+            <div class="label-text" style="margin-bottom: 5px;">🔈 音量: <span id="volLabel">50</span>%</div>
+            <input type="range" id="volumeControlMain" min="0" max="100" value="50" oninput="updateVolLabel(this.value)" onchange="updateVolFinal(this.value)">
+        </div>
+    </div>
+</div>
+
+<script>
+    let audioCtx = null, timerID = null, clockInterval = null;
+    let isRunning = false, isPaused = false, isMuted = false;
+    let secondsElapsed = 0, nextTickTime = 0, clickTimer = null;
+
+    let bpm = parseInt(localStorage.getItem('runningBpm')) || 180;
+    let volume = parseInt(localStorage.getItem('runningVol')) || 50;
+    let soundType = localStorage.getItem('runningSound') || 'woodblock';
+    let outputMode = localStorage.getItem('runningMode') || 'earphone';
+    let currentTheme = localStorage.getItem('runningTheme') || 'rose';
+    let breathActive = localStorage.getItem('breathActive') === 'true';
+
+    window.onload = function() {
+        document.getElementById('bpmValue').textContent = bpm;
+        document.getElementById('volumeControlMain').value = volume;
+        document.getElementById('volumeControlFocus').value = volume;
+        document.getElementById('volLabel').textContent = volume;
+        document.getElementById('soundType').value = soundType;
+        document.getElementById('breathToggle').checked = breathActive;
+        document.getElementById('inhaleTime').value = localStorage.getItem('inhaleTime') || 4;
+        document.getElementById('holdTime').value = localStorage.getItem('holdTime') || 2;
+        document.getElementById('exhaleTime').value = localStorage.getItem('exhaleTime') || 6;
+        if (breathActive) document.getElementById('breathContainer').classList.add('expanded');
+        setTheme(currentTheme);
+        updateModeUI();
+    };
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playClick(time) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const envelope = audioCtx.createGain();
+        const modeMultiplier = outputMode === 'speaker' ? 1.0 : 0.15;
+        const gainValue = (volume / 100) * modeMultiplier;
+        let decay = 0.04, freq = 1000, type = 'sine';
+        if(soundType==='woodblock'){freq=850; type='triangle'; decay=0.06;}
+        else if(soundType==='kick'){freq=150; type='sine'; decay=0.1;}
+        else if(soundType==='bell'){freq=2500; type='sine'; decay=0.08;}
+        else if(soundType==='beep'){freq=1200; type='square'; decay=0.03;}
+        else if(soundType==='water'){freq=1800; type='sine'; decay=0.02;}
+        osc.type = type; osc.frequency.setValueAtTime(freq, time);
+        envelope.gain.setValueAtTime(gainValue, time);
+        envelope.gain.exponentialRampToValueAtTime(0.0001, time + decay);
+        osc.connect(envelope); envelope.connect(audioCtx.destination);
+        osc.start(time); osc.stop(time + decay);
+    }
+
+    function startRunning() {
+        initAudio();
+        audioCtx.resume().then(() => {
+            isRunning = true; isPaused = false; secondsElapsed = 0;
+            refreshTimerUI();
+            const now = audioCtx.currentTime;
+            if (!isMuted) playClick(now);
+            nextTickTime = now + (60.0 / bpm);
+            document.getElementById('timerSection').classList.add('active');
+            document.getElementById('appContainer').classList.add('running');
+            if (breathActive) startBreathAnimation();
+            scheduler(); 
+            if (clockInterval) clearInterval(clockInterval);
+            clockInterval = setInterval(updateClock, 1000); 
+            updateButtonUI();
+        });
+    }
+
+    function scheduler() {
+        if (!isRunning || isPaused) return;
+        while (nextTickTime < audioCtx.currentTime + 0.1) {
+            if (!isMuted) playClick(nextTickTime);
+            nextTickTime += 60.0 / bpm;
+        }
+        timerID = setTimeout(scheduler, 25);
+    }
+
+    function stopRunning() { 
+        isRunning = false; isPaused = false; 
+        clearTimeout(timerID); if (clockInterval) clearInterval(clockInterval); 
+        clockInterval = null; secondsElapsed = 0;
+        document.getElementById('appContainer').classList.remove('running');
+        document.getElementById('timerSection').classList.remove('active');
+        refreshTimerUI(); stopBreathAnimation(); updateButtonUI(); 
+    }
+
+    function toggleBreath() { 
+        breathActive = document.getElementById('breathToggle').checked; 
+        const container = document.getElementById('breathContainer');
+        if (breathActive) container.classList.add('expanded');
+        else container.classList.remove('expanded');
+        saveSettings(); 
+        if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); 
+    }
+
+    function saveSettings() {
+        localStorage.setItem('runningBpm', bpm); localStorage.setItem('runningVol', volume);
+        localStorage.setItem('runningSound', soundType); localStorage.setItem('runningMode', outputMode);
+        localStorage.setItem('breathActive', breathActive); localStorage.setItem('runningTheme', currentTheme);
+        localStorage.setItem('inhaleTime', document.getElementById('inhaleTime').value);
+        localStorage.setItem('holdTime', document.getElementById('holdTime').value);
+        localStorage.setItem('exhaleTime', document.getElementById('exhaleTime').value);
+    }
+
+    function setTheme(theme) {
+        currentTheme = theme; document.body.setAttribute('data-theme', theme);
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const activeTab = document.getElementById('tab-' + theme);
+        if(activeTab) activeTab.classList.add('active');
+        saveSettings();
+    }
+
+    function updateVolLabel(val) { document.getElementById('volLabel').textContent = val; }
+    function updateVolFinal(val) {
+        volume = val; document.getElementById('volumeControlMain').value = val;
+        document.getElementById('volumeControlFocus').value = val;
+        document.getElementById('volLabel').textContent = val;
+        saveSettings(); if (audioCtx) playClick(audioCtx.currentTime);
+    }
+    function updateClock() { if (isRunning && !isPaused) { secondsElapsed++; refreshTimerUI(); } }
+    function refreshTimerUI() {
+        const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60;
+        const hG = document.getElementById('hGroup');
+        if (hrs > 0) { hG.style.display = 'inline-block'; document.getElementById('timerDisplay').classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; }
+        else { hG.style.display = 'none'; document.getElementById('timerDisplay').classList.remove('long-time'); }
+        document.getElementById('m1').textContent = Math.floor(mins/10); document.getElementById('m2').textContent = mins%10;
+        document.getElementById('s1').textContent = Math.floor(secs/10); document.getElementById('s2').textContent = secs%10;
+    }
+    function updateButtonUI() {
+        const row = document.getElementById('initialBtnRow');
+        if (!isRunning) row.innerHTML = `<button class="btn-base btn-start" onclick="startRunning()">開始跑步</button>`;
+        else if (isPaused) row.innerHTML = `<button class="btn-base btn-resume" onclick="resumeRunning()">繼續</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`;
+        else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`;
+    }
+    function pauseRunning() { isPaused = true; clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); }
+    function resumeRunning() { isPaused = false; initAudio(); const now = audioCtx.currentTime; if (!isMuted) playClick(now); nextTickTime = now + (60.0 / bpm); if (breathActive) startBreathAnimation(); scheduler(); updateButtonUI(); }
+    function startBreathAnimation() { 
+        const circle = document.getElementById('breathCircle'); circle.style.display = 'block'; 
+        const inT = parseFloat(document.getElementById('inhaleTime').value)||4; const hT = parseFloat(document.getElementById('holdTime').value)||2; const exT = parseFloat(document.getElementById('exhaleTime').value)||6; const totalT = inT+hT+exT; 
+        circle.animate([{transform:'translate(-50%,-50%) scale(0.1)', offset:0},{transform:'translate(-50%,-50%) scale(1)', offset:inT/totalT},{transform:'translate(-50%,-50%) scale(1)', offset:(inT+hT)/totalT},{transform:'translate(-50%,-50%) scale(0.1)', offset:1}],{duration:totalT*1000, iterations:Infinity, easing:'linear'}); 
+    }
+    function stopBreathAnimation() { document.getElementById('breathCircle').getAnimations().forEach(anim=>anim.cancel()); document.getElementById('breathCircle').style.display='none'; }
+    function setMode(mode) { outputMode = mode; updateModeUI(); saveSettings(); if(audioCtx) playClick(audioCtx.currentTime); }
+    function updateModeUI() { document.getElementById('modeEarphone').classList.toggle('active', outputMode==='earphone'); document.getElementById('modeSpeaker').classList.toggle('active', outputMode==='speaker'); }
+    function adjustBPM(amount) { bpm += amount; if(bpm<100) bpm=100; document.getElementById('bpmValue').textContent = bpm; saveSettings(); }
+    function handleSoundChange(el) { soundType = el.value; saveSettings(); if(audioCtx) playClick(audioCtx.currentTime); }
+    function handleVolClick(e) { if(clickTimer){clearTimeout(clickTimer);clickTimer=null;return;} clickTimer=setTimeout(()=>{ isMuted=!isMuted; document.getElementById('volIcon').textContent=isMuted?'🔇':'🔊'; document.getElementById('volIcon').style.opacity=isMuted?'0.4':'1'; clickTimer=null; },250); }
+    function handleVolDblClick(e) { clearTimeout(clickTimer); clickTimer=null; const slider = document.getElementById('quickVolSlider'); slider.style.display = (slider.style.display === 'block') ? 'none' : 'block'; }
+</script>
+</body>
+</html>
