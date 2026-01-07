@@ -37,7 +37,7 @@
         }
 
         .container.running { background: transparent; box-shadow: none; width: 100vw; height: 100vh; padding: 0; justify-content: space-evenly; border-radius: 0; }
-        .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .wakelock-check-container { display: none !important; }
+        .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .switches-row { display: none !important; }
 
         .running-content-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; justify-content: center; }
         .running .running-content-wrapper { height: 90%; }
@@ -66,27 +66,23 @@
         .running .btn-stop { width: 130px; border-width: 3px; font-size: 1.2rem; background: rgba(255,255,255,0.2); color: var(--c-mid); border: 2px solid var(--c-light); }
         .btn-stop { background-color: transparent; color: var(--c-mid); border: 2px solid var(--c-light); width: 100px; }
 
-        /* --- 修正：螢幕常亮互動細節 --- */
-        .wakelock-check-container { 
-            display: flex; align-items: center; gap: 8px; margin-top: 4px; padding-bottom: 8px; 
-            cursor: pointer; color: var(--c-mid); font-weight: 600; font-size: 0.9rem; transition: all 0.2s;
+        /* --- 修正後的開關列排版 --- */
+        .switches-row { 
+            display: flex; justify-content: space-between; align-items: center; 
+            width: 100%; max-width: 260px; margin-top: 4px; padding-bottom: 8px;
         }
-        .wakelock-check-container:hover { color: var(--c-text); }
-        .wakelock-check-container label { cursor: pointer; display: flex; align-items: center; gap: 8px; }
-
-        .wakelock-check-container input { 
+        .toggle-item {
+            display: flex; align-items: center; gap: 6px;
+            cursor: pointer; color: var(--c-mid); font-weight: 600; font-size: 0.9rem;
+        }
+        .toggle-item input { 
             cursor: pointer; width: 18px; height: 18px; 
             appearance: none; -webkit-appearance: none;
-            background-color: var(--white);
-            border: 2px solid var(--c-light);
-            border-radius: 4px;
-            position: relative;
-            transition: all 0.2s;
-            flex-shrink: 0;
+            background-color: var(--white); border: 2px solid var(--c-light);
+            border-radius: 4px; position: relative; transition: all 0.2s; flex-shrink: 0;
         }
-        .wakelock-check-container:hover input { border-color: var(--c-text); }
-        .wakelock-check-container input:checked { background-color: var(--bg-page); border-color: var(--c-mid); }
-        .wakelock-check-container input:checked::after {
+        .toggle-item input:checked { background-color: var(--bg-page); border-color: var(--c-mid); }
+        .toggle-item input:checked::after {
             content: "✓"; position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, -50%); color: var(--c-mid); font-size: 14px; font-weight: bold;
         }
@@ -161,10 +157,14 @@
                 <button class="btn-start btn-base" onclick="startRunning()">開始跑步</button>
             </div>
             
-            <div class="wakelock-check-container">
-                <label for="wakeLockToggle">
+            <div class="switches-row">
+                <label class="toggle-item">
                     <input type="checkbox" id="wakeLockToggle" onchange="saveSettings()">
-                    螢幕常亮
+                    <span>螢幕常亮</span>
+                </label>
+                <label class="toggle-item">
+                    <input type="checkbox" id="musicToggle" onchange="saveSettings()">
+                    <span>背景音樂</span>
                 </label>
             </div>
 
@@ -224,6 +224,10 @@
     let isRunning = false, isPaused = false, isMuted = false;
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null, debounceTimer = null;
     let wakeLock = null;
+    
+    // 背景音樂相關
+    const bgMusic = new Audio('./music.mp3');
+    bgMusic.loop = true;
 
     let bpm = parseInt(localStorage.getItem('runningBpm')) || 180;
     let volume = parseInt(localStorage.getItem('runningVol')) || 50;
@@ -234,6 +238,7 @@
     let countdownActive = localStorage.getItem('countdownActive') === 'true';
     let soundSettingActive = localStorage.getItem('soundSettingActive') === 'true';
     let wakeLockEnabled = localStorage.getItem('wakeLockEnabled') !== 'false';
+    let musicEnabled = localStorage.getItem('musicEnabled') === 'true'; // 音樂預設關閉或讀取儲存
 
     const SVG_SPEAKER = `<svg class="vol-icon-svg" viewBox="0 0 24 24"><path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.03,19.86 21,16.28 21,12C21,7.72 18.03,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/></svg>`;
     const SVG_MUTE = `<svg class="vol-icon-svg vol-muted" viewBox="0 0 24 24"><path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18.03,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.48,12.43 16.5,12.22 16.5,12Z"/></svg>`;
@@ -255,15 +260,28 @@
         document.getElementById('soundSettingToggle').checked = soundSettingActive;
         if (soundSettingActive) document.getElementById('soundSettingContainer').classList.add('expanded');
         document.getElementById('wakeLockToggle').checked = wakeLockEnabled;
+        document.getElementById('musicToggle').checked = musicEnabled;
         setTheme(currentTheme);
         updateModeUI();
         renderVolIcon();
+        updateMusicVolume();
     };
 
     function renderVolIcon() { document.getElementById('volIconWrapper').innerHTML = isMuted ? SVG_MUTE : SVG_SPEAKER; }
     async function requestWakeLock() { if (!wakeLockEnabled) return; try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
     function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
-    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+    
+    function initAudio() { 
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+        if (audioCtx.state === 'suspended') audioCtx.resume(); 
+    }
+
+    function updateMusicVolume() {
+        // 音樂音量稍微調低一點點，避免蓋過節拍聲，並受主音量與輸出模式影響
+        const modeMultiplier = outputMode === 'speaker' ? 0.8 : 0.4;
+        bgMusic.volume = (volume / 100) * modeMultiplier;
+        bgMusic.muted = isMuted;
+    }
 
     function playClick(time, isEndSound = false) {
         if (!audioCtx) return;
@@ -294,6 +312,14 @@
             document.getElementById('timerSection').classList.add('active');
             document.getElementById('appContainer').classList.add('running');
             if (breathActive) startBreathAnimation();
+            
+            // 音樂控制
+            if (musicEnabled) {
+                updateMusicVolume();
+                bgMusic.currentTime = 0;
+                bgMusic.play().catch(e => console.log("音樂播放失敗", e));
+            }
+
             scheduler(); if (clockInterval) clearInterval(clockInterval);
             clockInterval = setInterval(updateClock, 1000); updateButtonUI();
         });
@@ -308,18 +334,36 @@
         timerID = setTimeout(scheduler, 25);
     }
 
-    function stopRunning() { isRunning = false; isPaused = false; releaseWakeLock(); clearTimeout(timerID); if (clockInterval) clearInterval(clockInterval); clockInterval = null; secondsElapsed = 0; document.getElementById('appContainer').classList.remove('running'); document.getElementById('timerSection').classList.remove('active'); refreshTimerUI(); stopBreathAnimation(); updateButtonUI(); }
+    function stopRunning() { 
+        isRunning = false; isPaused = false; 
+        releaseWakeLock(); 
+        clearTimeout(timerID); 
+        if (clockInterval) clearInterval(clockInterval); 
+        clockInterval = null; 
+        secondsElapsed = 0; 
+        document.getElementById('appContainer').classList.remove('running'); 
+        document.getElementById('timerSection').classList.remove('active'); 
+        refreshTimerUI(); 
+        stopBreathAnimation(); 
+        updateButtonUI(); 
+        // 音樂停止
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+    }
+
     function toggleBreath() { breathActive = document.getElementById('breathToggle').checked; const container = document.getElementById('breathContainer'); if (breathActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); }
     function toggleCountdown() { countdownActive = document.getElementById('countdownToggle').checked; const container = document.getElementById('countdownContainer'); if (countdownActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); }
     function toggleSoundSetting() { soundSettingActive = document.getElementById('soundSettingToggle').checked; const container = document.getElementById('soundSettingContainer'); if (soundSettingActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); }
 
     function saveSettings() {
         wakeLockEnabled = document.getElementById('wakeLockToggle').checked;
+        musicEnabled = document.getElementById('musicToggle').checked;
         localStorage.setItem('runningBpm', bpm); localStorage.setItem('runningVol', volume);
         localStorage.setItem('runningSound', soundType); localStorage.setItem('runningMode', outputMode);
         localStorage.setItem('breathActive', breathActive); localStorage.setItem('runningTheme', currentTheme);
         localStorage.setItem('countdownActive', countdownActive); localStorage.setItem('soundSettingActive', soundSettingActive);
         localStorage.setItem('wakeLockEnabled', wakeLockEnabled);
+        localStorage.setItem('musicEnabled', musicEnabled);
         localStorage.setItem('countdownMinutes', document.getElementById('countdownMinutes').value);
         localStorage.setItem('inhaleTime', document.getElementById('inhaleTime').value);
         localStorage.setItem('holdTime', document.getElementById('holdTime').value);
@@ -336,6 +380,7 @@
     function updateVolLabel(val) { 
         document.getElementById('volLabel').textContent = val; 
         volume = val;
+        updateMusicVolume();
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
             initAudio(); if (audioCtx) playClick(audioCtx.currentTime);
@@ -346,21 +391,43 @@
         volume = val; document.getElementById('volumeControlMain').value = val;
         document.getElementById('volumeControlFocus').value = val;
         document.getElementById('volLabel').textContent = val;
+        updateMusicVolume();
         saveSettings();
     }
 
     function updateClock() { if (isRunning && !isPaused) { secondsElapsed++; refreshTimerUI(); if (countdownActive) { const targetSeconds = parseInt(document.getElementById('countdownMinutes').value) * 60; if (secondsElapsed >= targetSeconds) { const now = audioCtx.currentTime; playClick(now, true); playClick(now + 0.3, true); setTimeout(stopRunning, 1000); } } } }
     function refreshTimerUI() { const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60; const hG = document.getElementById('hGroup'); const tDisp = document.getElementById('timerDisplay'); if (hrs > 0) { hG.style.display = 'inline-block'; tDisp.classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; } else { hG.style.display = 'none'; tDisp.classList.remove('long-time'); } document.getElementById('m1').textContent = Math.floor(mins/10); document.getElementById('m2').textContent = mins%10; document.getElementById('s1').textContent = Math.floor(secs/10); document.getElementById('s2').textContent = secs%10; }
     function updateButtonUI() { const row = document.getElementById('initialBtnRow'); if (!isRunning) row.innerHTML = `<button class="btn-base btn-start" onclick="startRunning()">開始跑步</button>`; else if (isPaused) row.innerHTML = `<button class="btn-base btn-resume" onclick="resumeRunning()">繼續</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; }
-    function pauseRunning() { isPaused = true; releaseWakeLock(); clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); }
-    function resumeRunning() { isPaused = false; initAudio(); requestWakeLock(); nextTickTime = audioCtx.currentTime; if (breathActive) startBreathAnimation(); scheduler(); updateButtonUI(); }
+    
+    function pauseRunning() { 
+        isPaused = true; releaseWakeLock(); clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); 
+        bgMusic.pause();
+    }
+    
+    function resumeRunning() { 
+        isPaused = false; initAudio(); requestWakeLock(); nextTickTime = audioCtx.currentTime; 
+        if (breathActive) startBreathAnimation(); 
+        if (musicEnabled) bgMusic.play();
+        scheduler(); updateButtonUI(); 
+    }
+    
     function startBreathAnimation() { const circle = document.getElementById('breathCircle'); circle.style.display = 'block'; const inT = parseFloat(document.getElementById('inhaleTime').value)||4; const hT = parseFloat(document.getElementById('holdTime').value)||2; const exT = parseFloat(document.getElementById('exhaleTime').value)||6; const totalT = inT+hT+exT; circle.animate([{transform:'translate(-50%,-50%) scale(0.1)', offset:0},{transform:'translate(-50%,-50%) scale(1)', offset:inT/totalT},{transform:'translate(-50%,-50%) scale(1)', offset:(inT+hT)/totalT},{transform:'translate(-50%,-50%) scale(0.1)', offset:1}],{duration:totalT*1000, iterations:Infinity, easing:'linear'}); }
     function stopBreathAnimation() { document.getElementById('breathCircle').getAnimations().forEach(anim=>anim.cancel()); document.getElementById('breathCircle').style.display='none'; }
-    function setMode(mode) { outputMode = mode; updateModeUI(); saveSettings(); initAudio(); if(audioCtx) playClick(audioCtx.currentTime); }
+    function setMode(mode) { outputMode = mode; updateModeUI(); updateMusicVolume(); saveSettings(); initAudio(); if(audioCtx) playClick(audioCtx.currentTime); }
     function updateModeUI() { const earphoneBtn = document.getElementById('modeEarphone'); const speakerBtn = document.getElementById('modeSpeaker'); if(earphoneBtn) earphoneBtn.classList.toggle('active', outputMode==='earphone'); if(speakerBtn) speakerBtn.classList.toggle('active', outputMode==='speaker'); }
     function adjustBPM(amount) { bpm += amount; if(bpm<100) bpm=100; document.getElementById('bpmValue').textContent = bpm; saveSettings(); }
     function handleSoundChange(el) { soundType = el.value; saveSettings(); initAudio(); if(audioCtx) playClick(audioCtx.currentTime); }
-    function handleVolClick(e) { if(clickTimer){clearTimeout(clickTimer);clickTimer=null;return;} clickTimer=setTimeout(()=>{ isMuted=!isMuted; renderVolIcon(); clickTimer=null; },250); }
+    
+    function handleVolClick(e) { 
+        if(clickTimer){clearTimeout(clickTimer);clickTimer=null;return;} 
+        clickTimer=setTimeout(()=>{ 
+            isMuted=!isMuted; 
+            renderVolIcon(); 
+            updateMusicVolume();
+            clickTimer=null; 
+        },250); 
+    }
+    
     function handleVolDblClick(e) { clearTimeout(clickTimer); clickTimer=null; const slider = document.getElementById('quickVolSlider'); slider.style.display = (slider.style.display === 'block') ? 'none' : 'block'; }
 </script>
 </body>
