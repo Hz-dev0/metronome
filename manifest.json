@@ -1,0 +1,16 @@
+{
+  "name": "跑步節拍器 PWA",
+  "short_name": "跑步節拍",
+  "description": "具備呼吸引導與音樂功能的跑步節拍器",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F7EDEF",
+  "theme_color": "#D6B2BC",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3843/3843034.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
