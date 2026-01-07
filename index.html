@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>跑步節拍器</title>
     <style>
         :root {
@@ -11,12 +11,12 @@
         }
         [data-theme="purple"] { --bg-page: #FCF4FC; --c-mid: #D9A2CD; --c-light: #F2D5F2; --c-text: #6a5a6b; --setting-bg: #F5DDF4; --input-bg: #FCF4FC; --input-border: #F2D5F2; }
         [data-theme="ocean"] { --bg-page: #E3F2FD; --c-mid: #90B4D9; --c-light: #C1D5EB; --c-text: #455A64; --setting-bg: #ECF3F9; --input-bg: #E3F2FD; --input-border: #C1D5EB; }
-        [data-theme="forest"] { --bg-page: #F1F8E9; --c-mid: #C5E1A5; --c-light: #DCEDC8; --c-text: #558B2F; --setting-bg: #F9FBF7; --input-bg: #F1F8E9; --input-border: #DCEDC8; }
+        [data-theme="forest"] { --bg-page: #F1F8E9; --c-mid: #ACC490; --c-light: #DCEDC8; --c-text: #4F5D3D; --setting-bg: #F9FBF7; --input-bg: #F1F8E9; --input-border: #DCEDC8; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; margin: 0; background-color: var(--bg-page);
+            height: 100vh; margin: 0; background-color: var(--bg-page);
             transition: background-color 0.3s; color: var(--c-text);
             overflow: hidden; position: relative;
         }
@@ -25,86 +25,111 @@
         .folder-tabs { position: absolute; left: 100%; top: 50px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
         .tab { width: 14px; height: 35px; border-radius: 0 6px 6px 0; cursor: pointer; border: none; opacity: 0.7; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
         .tab.active { opacity: 1; width: 22px; }
-        .tab-rose { background-color: #D6B2BC; } .tab-purple { background-color: #D9A2CD; } .tab-ocean { background-color: #90B4D9; } .tab-forest { background-color: #C5E1A5; }
+        .tab-rose { background-color: #D6B2BC; } .tab-purple { background-color: #D9A2CD; } .tab-ocean { background-color: #90B4D9; } .tab-forest { background-color: #ACC490; }
 
         /* 主要容器 */
         .container {
             background: var(--white); padding: 2.2rem 1.5rem; border-radius: 40px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.06); text-align: center; 
-            width: 340px; transition: all 0.4s ease;
+            width: 340px; transition: all 0.3s ease;
             z-index: 10; display: flex; flex-direction: column; align-items: center; position: relative; 
         }
 
-        /* 運行中樣式：整體垂直居中 */
+        /* 運行中：全螢幕自適應 */
         .container.running { 
             background: transparent; box-shadow: none; width: 100vw; height: 100vh; 
-            padding: 0; justify-content: center; transform: scale(1);
+            padding: 0; justify-content: space-evenly; border-radius: 0;
         }
 
-        /* 橫向模式下對「整體」進行縮放 */
-        @media screen and (orientation: landscape) {
-            .container.running { transform: scale(0.7); }
-        }
+        .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .wakelock-check-container { display: none !important; }
 
-        .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .btn-round, .running .unit-label, .running .wakelock-check-container { display: none !important; }
+        .running-content-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; justify-content: center; }
+        .running .running-content-wrapper { height: 90%; }
 
-        /* 計時與控制項整體 */
-        .running-content-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; }
-
+        /* 計時器樣式 */
         .timer-section { display: none; width: 100%; }
         .timer-section.active { display: block; }
-        .timer-display { display: flex; justify-content: center; align-items: center; font-weight: 700; color: var(--c-mid); font-variant-numeric: tabular-nums; font-size: 3.5rem; }
+        .timer-display { display: flex; justify-content: center; align-items: center; font-weight: 700; color: var(--c-mid); font-variant-numeric: tabular-nums; }
         
-        /* 縱向加大字體 */
-        .running .timer-display { font-size: 12rem; font-weight: 800; margin-bottom: 30px; line-height: 1; }
-        .running .timer-display.long-time { font-size: 8rem; }
+        /* 一般模式下的計時器 */
+        .container:not(.running) .timer-display { font-size: 3.5rem; margin-bottom: 20px; }
+
+        /* 跑步模式下的計時器：極大化 */
+        .running .timer-display { 
+            font-size: min(28vw, 22vh); 
+            font-weight: 800; 
+            line-height: 1;
+            margin-bottom: 2vh;
+        }
+        .running .timer-display.long-time { font-size: min(20vw, 15vh); }
         
         .digit { display: inline-block; text-align: center; width: 0.65em; }
         .sep { display: inline-block; text-align: center; width: 0.25em; }
 
+        /* BPM 顯示 */
         .bpm-controls-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin-bottom: 5px; }
         .bpm-text { font-size: 4.2rem; font-weight: 800; color: var(--c-mid); line-height: 0.8; }
         .unit-label { font-size: 0.8rem; color: var(--c-text); opacity: 0.5; font-weight: bold; margin-top: 8px; letter-spacing: 2px; }
 
-        #breathCircle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.1); width: 85vh; height: 85vh; background-color: var(--c-mid); border-radius: 50%; opacity: 0.15; z-index: -1; display: none; }
-        .btn-round { width: 55px; height: 55px; border-radius: 50%; background-color: var(--white); color: var(--c-mid); border: 2px solid var(--c-light); font-size: 1.8rem; font-weight: bold; cursor: pointer; }
-        
-        .main-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; align-items: center; width: 100%; }
+        #breathCircle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.1); width: 90vh; height: 90vh; background-color: var(--c-mid); border-radius: 50%; opacity: 0.15; z-index: -1; display: none; }
+        .btn-round { width: 55px; height: 55px; border-radius: 50%; background-color: var(--white); color: var(--c-mid); border: 2px solid var(--c-light); font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-round:active { transform: scale(0.9); }
+
+        /* 控制按鈕自適應 */
+        .main-controls { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; align-items: center; width: 100%; }
         .btn-row { display: flex; gap: 12px; width: 100%; justify-content: center; }
-        .btn-base { padding: 18px; font-size: 1.1rem; border: none; border-radius: 22px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-start, .btn-pause, .btn-resume { background-color: var(--c-mid); color: var(--white); width: 100%; max-width: 280px; }
+        .btn-base { padding: 18px; font-size: 1.1rem; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-start, .btn-pause, .btn-resume { background-color: var(--c-mid); color: var(--white); width: 100%; max-width: 280px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        /* 跑步時按鈕加大 */
+        .running .btn-base { padding: 22px 40px; font-size: 1.4rem; border-radius: 30px; }
+        .running .btn-start, .running .btn-pause, .running .btn-resume { max-width: 320px; }
+        .running .btn-stop { width: 130px; border-width: 3px; font-size: 1.2rem; background: rgba(255,255,255,0.2); }
+
         .btn-stop { background-color: transparent; color: var(--c-mid); border: 2px solid var(--c-light); width: 100px; }
 
         .wakelock-check-container { display: flex; align-items: center; gap: 8px; margin-top: 4px; padding-bottom: 8px; cursor: pointer; user-select: none; }
-        .wakelock-check-container input { cursor: pointer; width: 18px; height: 18px; accent-color: var(--c-light); }
-        .wakelock-check-container label { font-size: 0.9rem; font-weight: 600; color: var(--c-text); opacity: 0.6; cursor: pointer; }
+        .wakelock-check-container input { cursor: pointer; width: 18px; height: 18px; accent-color: var(--c-mid); }
 
-        .quick-volume { display: none; flex-direction: column; align-items: center; gap: 10px; width: 220px; margin-top: 20px; }
+        .quick-volume { display: none; flex-direction: column; align-items: center; gap: 15px; width: 250px; margin-top: 20px; }
         .running .quick-volume { display: flex; }
-        .vol-icon { font-size: 2.5rem; cursor: pointer; color: var(--c-mid); opacity: 0.8; }
+        .vol-icon { font-size: 3rem; cursor: pointer; color: var(--c-mid); }
 
+        /* 設定區域 */
         .settings-grid { display: grid; gap: 12px; margin-top: 0; text-align: left; background: var(--setting-bg); padding: 18px; border-radius: 30px; width: 100%; box-sizing: border-box; }
         .header-with-switch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .label-text { font-size: 0.85rem; color: var(--c-mid); font-weight: 800; display: block; }
+        .label-text { font-size: 0.85rem; color: var(--c-mid); font-weight: 800; }
         .collapsible-settings { background: var(--white); border-radius: 20px; max-height: 0; overflow: hidden; transition: all 0.3s ease-out; padding: 0 12px; opacity: 0; }
         .collapsible-settings.expanded { max-height: 250px; padding: 12px; opacity: 1; margin-top: 5px; }
+        
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--c-light); transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--c-mid); }
         input:checked + .slider:before { transform: translateX(18px); }
-        .mode-switch { display: flex; background: var(--white); border-radius: 15px; padding: 4px; margin-bottom: 10px; }
+
+        .mode-switch { display: flex; background: var(--setting-bg); border-radius: 15px; padding: 4px; margin-bottom: 10px; }
         .mode-btn { flex: 1; padding: 10px; font-size: 0.85rem; background: transparent; color: var(--c-text); border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
         .mode-btn.active { background: var(--c-mid); color: var(--white); }
+        
         select { width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid var(--input-border); font-size: 0.9rem; color: var(--c-text); background: var(--input-bg); cursor: pointer; margin-bottom: 10px; }
-        input[type="range"] { width: 100%; accent-color: var(--c-mid); }
+        input[type="range"] { width: 100%; accent-color: var(--c-mid); cursor: pointer; }
+        
         .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
         .input-group input { width: 80px; padding: 8px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); }
+        
         #breathInputsWrapper { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .breath-inputs-item { text-align: center; }
         .breath-inputs-item small { display: block; font-size: 0.7rem; margin-bottom: 3px; opacity: 0.7; }
         .breath-inputs-item input { width: 100%; padding: 8px 2px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); box-sizing: border-box; }
+
+        /* 防止橫向模式捲軸 */
+        @media screen and (orientation: landscape) and (max-height: 500px) {
+            .running .timer-display { font-size: 20vh; margin-bottom: 1vh; }
+            .running .btn-base { padding: 10px 20px; font-size: 1rem; }
+            .running .quick-volume { margin-top: 5px; transform: scale(0.8); }
+        }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -150,7 +175,7 @@
             <div class="quick-volume">
                 <div id="volIcon" class="vol-icon" onclick="handleVolClick(event)" ondblclick="handleVolDblClick(event)">🔊</div>
                 <div id="quickVolSlider" style="display:none; width:100%;">
-                    <input type="range" id="volumeControlFocus" min="0" max="100" value="50">
+                    <input type="range" id="volumeControlFocus" min="0" max="100" value="50" oninput="updateVolFinal(this.value)">
                 </div>
             </div>
         </div>
@@ -240,7 +265,7 @@
         try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
     }
 
-    function releaseWakeLock() { if (wakeLock !== null) wakeLock.release().then(() => { wakeLock = null; }); }
+    function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -346,7 +371,7 @@
         volume = val; document.getElementById('volumeControlMain').value = val;
         document.getElementById('volumeControlFocus').value = val;
         document.getElementById('volLabel').textContent = val;
-        saveSettings(); if (audioCtx) playClick(audioCtx.currentTime);
+        saveSettings(); if (audioCtx && isRunning) playClick(audioCtx.currentTime);
     }
 
     function updateClock() { 
@@ -366,8 +391,9 @@
     function refreshTimerUI() {
         const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60;
         const hG = document.getElementById('hGroup');
-        if (hrs > 0) { hG.style.display = 'inline-block'; document.getElementById('timerDisplay').classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; }
-        else { hG.style.display = 'none'; document.getElementById('timerDisplay').classList.remove('long-time'); }
+        const tDisp = document.getElementById('timerDisplay');
+        if (hrs > 0) { hG.style.display = 'inline-block'; tDisp.classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; }
+        else { hG.style.display = 'none'; tDisp.classList.remove('long-time'); }
         document.getElementById('m1').textContent = Math.floor(mins/10); document.getElementById('m2').textContent = mins%10;
         document.getElementById('s1').textContent = Math.floor(secs/10); document.getElementById('s2').textContent = secs%10;
     }
