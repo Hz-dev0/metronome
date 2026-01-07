@@ -240,10 +240,12 @@
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null, debounceTimer = null;
     let wakeLock = null;
     
-    // 已更新為 Cloudinary 音樂網址
-    const bgMusic = new Audio('https://res.cloudinary.com/dvbwcjpdu/video/upload/v1767812963/music_1_xih1u2.mp3');
-    bgMusic.crossOrigin = "anonymous";
+    // --- 關鍵修改：背景音樂初始化 (解決 GitHub Pages 跨域) ---
+    const bgMusic = new Audio();
+    bgMusic.crossOrigin = "anonymous"; 
+    bgMusic.src = 'https://res.cloudinary.com/dvbwcjpdu/video/upload/v1767812963/music_1_xih1u2.mp3';
     bgMusic.loop = true;
+    bgMusic.preload = "auto";
 
     let bpm = parseInt(localStorage.getItem('runningBpm')) || 180;
     let volume = parseInt(localStorage.getItem('runningVol')) || 50;
@@ -323,7 +325,11 @@
             document.getElementById('timerSection').classList.add('active');
             document.getElementById('appContainer').classList.add('running');
             if (breathActive) startBreathAnimation();
-            if (musicEnabled) { updateMusicVolume(); bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
+            if (musicEnabled) { 
+                updateMusicVolume(); 
+                bgMusic.currentTime = 0; 
+                bgMusic.play().catch(e => console.error("音樂播放失敗:", e)); 
+            }
             scheduler(); if (clockInterval) clearInterval(clockInterval);
             clockInterval = setInterval(updateClock, 1000); updateButtonUI();
         });
