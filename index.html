@@ -18,7 +18,7 @@
             --white: #ffffff; --setting-bg: #ECF3F9; --input-bg: #E3F2FD; --input-border: #C1D5EB; 
         }
         [data-theme="forest"] { 
-            --bg-page: #F1F8E9; --c-mid: #C5E1A5; --c-light: #DCEDC8; --c-text: #558B2F; 
+            --bg-page: #F1F8E9; --c-mid: #A5BD8A; --c-light: #DCEDC8; --c-text: #558B2F; 
             --white: #ffffff; --setting-bg: #F9FBF7; --input-bg: #F1F8E9; --input-border: #DCEDC8; 
         }
 
@@ -40,80 +40,85 @@
         .tab-rose { background-color: #D6B2BC; } 
         .tab-purple { background-color: #D9A2CD; } 
         .tab-ocean { background-color: #90B4D9; } 
-        .tab-forest { background-color: #C5E1A5; }
+        .tab-forest { background-color: #A5BD8A; }
 
         .container {
-            background: var(--white); padding: 2.5rem 1.5rem; border-radius: 40px;
+            background: var(--white); padding: 2rem 1.5rem; border-radius: 40px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.06); text-align: center; 
             width: 340px; transition: all 0.5s ease; z-index: 10;
             display: flex; flex-direction: column; align-items: center; position: relative; 
         }
         .container.running { width: 100vw; height: 100vh; max-width: 100%; border-radius: 0; box-shadow: none; background: transparent; padding: 0; justify-content: center; }
 
-        .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .btn-round, .running .unit-label { display: none !important; }
+        .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .btn-round, .running .unit-label, .running .wakelock-check-container { display: none !important; }
 
         .timer-section { display: none; width: 100%; }
         .timer-section.active { display: block; }
         .timer-display { display: flex; justify-content: center; align-items: center; font-weight: 700; color: var(--c-mid); font-variant-numeric: tabular-nums; font-size: 3.5rem; }
-        .running .timer-display { font-size: 10rem; font-weight: 800; margin-bottom: 20px; }
+        .running .timer-display { font-size: 10rem; font-weight: 800; }
         .running .timer-display.long-time { font-size: 6rem; }
         .digit { display: inline-block; text-align: center; width: 0.65em; }
         .sep { display: inline-block; text-align: center; width: 0.25em; }
 
-        .bpm-controls-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin: 15px 0; }
+        .bpm-controls-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin-bottom: 5px; }
         .bpm-text { font-size: 4.2rem; font-weight: 800; color: var(--c-mid); line-height: 0.8; }
         .unit-label { font-size: 0.8rem; color: var(--c-text); opacity: 0.5; font-weight: bold; margin-top: 8px; letter-spacing: 2px; }
 
         #breathCircle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.1); width: 80vh; height: 80vh; background-color: var(--c-mid); border-radius: 50%; opacity: 0.15; z-index: -1; display: none; }
         .btn-round { width: 55px; height: 55px; border-radius: 50%; background-color: var(--white); color: var(--c-mid); border: 2px solid var(--c-light); font-size: 1.8rem; font-weight: bold; cursor: pointer; }
-        .main-controls { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; align-items: center; width: 100%; }
+        
+        .main-controls { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; align-items: center; width: 100%; }
         .btn-row { display: flex; gap: 12px; width: 100%; justify-content: center; }
         .btn-base { padding: 18px; font-size: 1.1rem; border: none; border-radius: 22px; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .btn-start, .btn-pause, .btn-resume { background-color: var(--c-mid); color: var(--white); width: 100%; max-width: 280px; }
         .btn-stop { background-color: transparent; color: var(--c-mid); border: 2px solid var(--c-light); width: 100px; }
 
+        .wakelock-check-container { 
+            display: flex; align-items: center; gap: 8px; 
+            margin-top: 4px; padding-bottom: 8px; cursor: pointer; user-select: none;
+        }
+        .wakelock-check-container input { cursor: pointer; width: 18px; height: 18px; accent-color: var(--c-light); }
+        .wakelock-check-container label { font-size: 0.9rem; font-weight: 600; color: var(--c-text); opacity: 0.6; cursor: pointer; }
+
         .quick-volume { display: none; flex-direction: column; align-items: center; gap: 10px; width: 60%; max-width: 300px; margin-top: 20px; }
         .running .quick-volume { display: flex; }
         .vol-icon { font-size: 2.5rem; cursor: pointer; color: var(--c-mid); opacity: 0.8; }
 
-        .settings-grid { display: grid; gap: 12px; margin-top: 25px; text-align: left; background: var(--setting-bg); padding: 18px; border-radius: 30px; width: 100%; box-sizing: border-box; }
-        
+        .settings-grid { 
+            display: grid; gap: 12px; margin-top: 0; text-align: left; 
+            background: var(--setting-bg); padding: 18px; border-radius: 30px; 
+            width: 100%; box-sizing: border-box; 
+        }
+
+        /* 修正：增加寬度判定，避免電腦版誤觸橫向模式 */
+        @media screen and (orientation: landscape) and (max-width: 1024px) {
+            .container.running { flex-direction: row; gap: 50px; padding: 20px; }
+            .running .timer-display { font-size: 12rem; margin-bottom: 0; }
+            .running .timer-display.long-time { font-size: 8rem; }
+            .running .quick-volume { width: 150px; }
+        }
+
         .header-with-switch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .label-text { font-size: 0.85rem; color: var(--c-mid); font-weight: 800; display: block; }
-        
-        .collapsible-settings { 
-            background: var(--white); border-radius: 20px; 
-            max-height: 0; overflow: hidden; transition: all 0.3s ease-out; 
-            padding: 0 12px; opacity: 0; 
-        }
-        .collapsible-settings.expanded { 
-            max-height: 250px; padding: 12px; opacity: 1; margin-top: 5px; 
-        }
-
-        .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .input-group input { width: 80px; padding: 8px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); }
-
-        #breathInputsWrapper { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .breath-inputs-item { text-align: center; }
-        .breath-inputs-item small { display: block; font-size: 0.7rem; margin-bottom: 3px; opacity: 0.7; }
-        .breath-inputs-item input { width: 100%; padding: 8px 2px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); box-sizing: border-box; }
-
+        .collapsible-settings { background: var(--white); border-radius: 20px; max-height: 0; overflow: hidden; transition: all 0.3s ease-out; padding: 0 12px; opacity: 0; }
+        .collapsible-settings.expanded { max-height: 250px; padding: 12px; opacity: 1; margin-top: 5px; }
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--c-light); transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--c-mid); }
         input:checked + .slider:before { transform: translateX(18px); }
-
         .mode-switch { display: flex; background: var(--white); border-radius: 15px; padding: 4px; margin-bottom: 10px; }
         .mode-btn { flex: 1; padding: 10px; font-size: 0.85rem; background: transparent; color: var(--c-text); border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
         .mode-btn.active { background: var(--c-mid); color: var(--white); }
-        
         select { width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid var(--input-border); font-size: 0.9rem; color: var(--c-text); background: var(--input-bg); cursor: pointer; margin-bottom: 10px; }
         input[type="range"] { width: 100%; accent-color: var(--c-mid); }
-        
-        .sub-setting-item { margin-bottom: 12px; }
-        .sub-setting-item:last-child { margin-bottom: 0; }
+        .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .input-group input { width: 80px; padding: 8px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); }
+        #breathInputsWrapper { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .breath-inputs-item { text-align: center; }
+        .breath-inputs-item small { display: block; font-size: 0.7rem; margin-bottom: 3px; opacity: 0.7; }
+        .breath-inputs-item input { width: 100%; padding: 8px 2px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); box-sizing: border-box; }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -149,6 +154,12 @@
         <div class="btn-row" id="initialBtnRow">
             <button class="btn-start btn-base" onclick="startRunning()">開始跑步</button>
         </div>
+        
+        <div class="wakelock-check-container" onclick="document.getElementById('wakeLockToggle').click()">
+            <input type="checkbox" id="wakeLockToggle" onchange="saveSettings()" onclick="event.stopPropagation()">
+            <label for="wakeLockToggle">螢幕常亮</label>
+        </div>
+
         <div class="quick-volume">
             <div id="volIcon" class="vol-icon" onclick="handleVolClick(event)" ondblclick="handleVolDblClick(event)">🔊</div>
             <div id="quickVolSlider" style="display:none; width:100%;">
@@ -222,6 +233,7 @@
     let audioCtx = null, timerID = null, clockInterval = null;
     let isRunning = false, isPaused = false, isMuted = false;
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null;
+    let wakeLock = null;
 
     let bpm = parseInt(localStorage.getItem('runningBpm')) || 180;
     let volume = parseInt(localStorage.getItem('runningVol')) || 50;
@@ -231,6 +243,7 @@
     let breathActive = localStorage.getItem('breathActive') === 'true';
     let countdownActive = localStorage.getItem('countdownActive') === 'true';
     let soundSettingActive = localStorage.getItem('soundSettingActive') === 'true';
+    let wakeLockEnabled = localStorage.getItem('wakeLockEnabled') !== 'false';
 
     window.onload = function() {
         document.getElementById('bpmValue').textContent = bpm;
@@ -238,23 +251,41 @@
         document.getElementById('volumeControlFocus').value = volume;
         document.getElementById('volLabel').textContent = volume;
         document.getElementById('soundType').value = soundType;
-        
         document.getElementById('breathToggle').checked = breathActive;
         document.getElementById('inhaleTime').value = localStorage.getItem('inhaleTime') || 4;
         document.getElementById('holdTime').value = localStorage.getItem('holdTime') || 2;
         document.getElementById('exhaleTime').value = localStorage.getItem('exhaleTime') || 6;
         if (breathActive) document.getElementById('breathContainer').classList.add('expanded');
-
         document.getElementById('countdownToggle').checked = countdownActive;
         document.getElementById('countdownMinutes').value = localStorage.getItem('countdownMinutes') || 30;
         if (countdownActive) document.getElementById('countdownContainer').classList.add('expanded');
-
         document.getElementById('soundSettingToggle').checked = soundSettingActive;
         if (soundSettingActive) document.getElementById('soundSettingContainer').classList.add('expanded');
-
+        document.getElementById('wakeLockToggle').checked = wakeLockEnabled;
         setTheme(currentTheme);
         updateModeUI();
     };
+
+    async function requestWakeLock() {
+        if (!wakeLockEnabled) return;
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) { console.error(`${err.name}, ${err.message}`); }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release().then(() => { wakeLock = null; });
+        }
+    }
+
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible' && isRunning && !isPaused) {
+            await requestWakeLock();
+        }
+    });
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -263,18 +294,12 @@
 
     function playClick(time, isEndSound = false) {
         if (!audioCtx) return;
-        
         const osc = audioCtx.createOscillator();
         const envelope = audioCtx.createGain();
         const modeMultiplier = outputMode === 'speaker' ? 1.0 : 0.15;
         const gainValue = (volume / 100) * modeMultiplier;
-        
         let decay = 0.05, freq = 1000, type = 'sine';
-        
-        if (isEndSound) {
-            freq = 660; type = 'sine'; decay = 0.3; 
-        } else {
-            // 優化各音色參數，增加敲擊一致性
+        if (isEndSound) { freq = 660; type = 'sine'; decay = 0.3; } else {
             if(soundType==='woodblock'){freq=880; type='triangle'; decay=0.06;}
             else if(soundType==='kick'){freq=120; type='sine'; decay=0.15;}
             else if(soundType==='bell'){freq=2800; type='sine'; decay=0.1;}
@@ -282,38 +307,22 @@
             else if(soundType==='water'){freq=1600; type='sine'; decay=0.03;}
             else if(soundType==='electronic'){freq=1200; type='sine'; decay=0.04;}
         }
-
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, time);
-        
-        // 關鍵：平滑包絡線，解決音色抖動感
-        envelope.gain.setValueAtTime(0, time);
-        envelope.gain.linearRampToValueAtTime(gainValue, time + 0.002); // 極快淡入避免 Pop 聲
-        envelope.gain.exponentialRampToValueAtTime(0.001, time + decay); // 自然衰減
-        
-        osc.connect(envelope);
-        envelope.connect(audioCtx.destination);
-        
-        osc.start(time);
-        osc.stop(time + decay + 0.1);
+        osc.type = type; osc.frequency.setValueAtTime(freq, time);
+        envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(gainValue, time + 0.002); envelope.gain.exponentialRampToValueAtTime(0.001, time + decay);
+        osc.connect(envelope); envelope.connect(audioCtx.destination);
+        osc.start(time); osc.stop(time + decay + 0.1);
     }
 
     function startRunning() {
-        initAudio();
+        initAudio(); requestWakeLock();
         audioCtx.resume().then(() => {
             isRunning = true; isPaused = false; secondsElapsed = 0;
-            refreshTimerUI();
-            
-            // 確保從當前音訊時間開始，但不產生瞬間重疊
-            nextTickTime = audioCtx.currentTime + 0.05; 
-            
+            refreshTimerUI(); nextTickTime = audioCtx.currentTime + 0.05; 
             document.getElementById('timerSection').classList.add('active');
             document.getElementById('appContainer').classList.add('running');
             if (breathActive) startBreathAnimation();
-            scheduler(); 
-            if (clockInterval) clearInterval(clockInterval);
-            clockInterval = setInterval(updateClock, 1000); 
-            updateButtonUI();
+            scheduler(); if (clockInterval) clearInterval(clockInterval);
+            clockInterval = setInterval(updateClock, 1000); updateButtonUI();
         });
     }
 
@@ -327,7 +336,7 @@
     }
 
     function stopRunning() { 
-        isRunning = false; isPaused = false; 
+        isRunning = false; isPaused = false; releaseWakeLock();
         clearTimeout(timerID); if (clockInterval) clearInterval(clockInterval); 
         clockInterval = null; secondsElapsed = 0;
         document.getElementById('appContainer').classList.remove('running');
@@ -338,34 +347,31 @@
     function toggleBreath() { 
         breathActive = document.getElementById('breathToggle').checked; 
         const container = document.getElementById('breathContainer');
-        if (breathActive) container.classList.add('expanded');
-        else container.classList.remove('expanded');
-        saveSettings(); 
-        if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); 
+        if (breathActive) container.classList.add('expanded'); else container.classList.remove('expanded');
+        saveSettings(); if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); 
     }
 
     function toggleCountdown() {
         countdownActive = document.getElementById('countdownToggle').checked;
         const container = document.getElementById('countdownContainer');
-        if (countdownActive) container.classList.add('expanded');
-        else container.classList.remove('expanded');
+        if (countdownActive) container.classList.add('expanded'); else container.classList.remove('expanded');
         saveSettings();
     }
 
     function toggleSoundSetting() {
         soundSettingActive = document.getElementById('soundSettingToggle').checked;
         const container = document.getElementById('soundSettingContainer');
-        if (soundSettingActive) container.classList.add('expanded');
-        else container.classList.remove('expanded');
+        if (soundSettingActive) container.classList.add('expanded'); else container.classList.remove('expanded');
         saveSettings();
     }
 
     function saveSettings() {
+        wakeLockEnabled = document.getElementById('wakeLockToggle').checked;
         localStorage.setItem('runningBpm', bpm); localStorage.setItem('runningVol', volume);
         localStorage.setItem('runningSound', soundType); localStorage.setItem('runningMode', outputMode);
         localStorage.setItem('breathActive', breathActive); localStorage.setItem('runningTheme', currentTheme);
-        localStorage.setItem('countdownActive', countdownActive);
-        localStorage.setItem('soundSettingActive', soundSettingActive);
+        localStorage.setItem('countdownActive', countdownActive); localStorage.setItem('soundSettingActive', soundSettingActive);
+        localStorage.setItem('wakeLockEnabled', wakeLockEnabled);
         localStorage.setItem('countdownMinutes', document.getElementById('countdownMinutes').value);
         localStorage.setItem('inhaleTime', document.getElementById('inhaleTime').value);
         localStorage.setItem('holdTime', document.getElementById('holdTime').value);
@@ -390,15 +396,13 @@
 
     function updateClock() { 
         if (isRunning && !isPaused) { 
-            secondsElapsed++; 
-            refreshTimerUI(); 
+            secondsElapsed++; refreshTimerUI(); 
             if (countdownActive) {
                 const targetSeconds = parseInt(document.getElementById('countdownMinutes').value) * 60;
                 if (secondsElapsed >= targetSeconds) {
                     const now = audioCtx.currentTime;
-                    playClick(now, true);
-                    playClick(now + 0.33, true); 
-                    setTimeout(stopRunning, 800);
+                    playClick(now, true); playClick(now + 0.3, true); 
+                    setTimeout(stopRunning, 1000);
                 }
             }
         } 
@@ -418,9 +422,8 @@
         else if (isPaused) row.innerHTML = `<button class="btn-base btn-resume" onclick="resumeRunning()">繼續</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`;
         else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`;
     }
-    function pauseRunning() { isPaused = true; clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); }
-    function resumeRunning() { isPaused = false; initAudio(); nextTickTime = audioCtx.currentTime; if (breathActive) startBreathAnimation(); scheduler(); updateButtonUI(); }
-    
+    function pauseRunning() { isPaused = true; releaseWakeLock(); clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); }
+    function resumeRunning() { isPaused = false; initAudio(); requestWakeLock(); nextTickTime = audioCtx.currentTime; if (breathActive) startBreathAnimation(); scheduler(); updateButtonUI(); }
     function startBreathAnimation() { 
         const circle = document.getElementById('breathCircle'); circle.style.display = 'block'; 
         const inT = parseFloat(document.getElementById('inhaleTime').value)||4; const hT = parseFloat(document.getElementById('holdTime').value)||2; const exT = parseFloat(document.getElementById('exhaleTime').value)||6; const totalT = inT+hT+exT; 
@@ -429,8 +432,7 @@
     function stopBreathAnimation() { document.getElementById('breathCircle').getAnimations().forEach(anim=>anim.cancel()); document.getElementById('breathCircle').style.display='none'; }
     function setMode(mode) { outputMode = mode; updateModeUI(); saveSettings(); if(audioCtx) playClick(audioCtx.currentTime); }
     function updateModeUI() { 
-        const earphoneBtn = document.getElementById('modeEarphone');
-        const speakerBtn = document.getElementById('modeSpeaker');
+        const earphoneBtn = document.getElementById('modeEarphone'); const speakerBtn = document.getElementById('modeSpeaker');
         if(earphoneBtn) earphoneBtn.classList.toggle('active', outputMode==='earphone'); 
         if(speakerBtn) speakerBtn.classList.toggle('active', outputMode==='speaker'); 
     }
