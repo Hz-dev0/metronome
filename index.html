@@ -13,12 +13,10 @@
             --bg-page: #FCF4FC; --c-mid: #D9A2CD; --c-light: #F2D5F2; --c-text: #6a5a6b;      
             --white: #ffffff; --setting-bg: #F5DDF4; --input-bg: #FCF4FC; --input-border: #F2D5F2;
         }
-        /* 更新後的藍色主題：對應圖片中的粉藍色 */
         [data-theme="ocean"] { 
             --bg-page: #E3F2FD; --c-mid: #90B4D9; --c-light: #C1D5EB; --c-text: #455A64; 
             --white: #ffffff; --setting-bg: #ECF3F9; --input-bg: #E3F2FD; --input-border: #C1D5EB; 
         }
-        /* 更新後的綠色主題：對應圖片中的草綠色 */
         [data-theme="forest"] { 
             --bg-page: #F1F8E9; --c-mid: #C5E1A5; --c-light: #DCEDC8; --c-text: #558B2F; 
             --white: #ffffff; --setting-bg: #F9FBF7; --input-bg: #F1F8E9; --input-border: #DCEDC8; 
@@ -80,18 +78,20 @@
 
         .settings-grid { display: grid; gap: 12px; margin-top: 25px; text-align: left; background: var(--setting-bg); padding: 18px; border-radius: 30px; width: 100%; box-sizing: border-box; }
         
-        .breath-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .header-with-switch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .label-text { font-size: 0.85rem; color: var(--c-mid); font-weight: 800; display: block; }
         
-        /* 修正後的白條容器：開關關閉時高度為 0 且消失 */
-        .breath-settings { 
+        .collapsible-settings { 
             background: var(--white); border-radius: 20px; 
             max-height: 0; overflow: hidden; transition: all 0.3s ease-out; 
             padding: 0 12px; opacity: 0; 
         }
-        .breath-settings.expanded { 
-            max-height: 120px; padding: 12px; opacity: 1; margin-top: 5px; 
+        .collapsible-settings.expanded { 
+            max-height: 250px; padding: 12px; opacity: 1; margin-top: 5px; 
         }
+
+        .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .input-group input { width: 80px; padding: 8px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); }
 
         #breathInputsWrapper { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .breath-inputs-item { text-align: center; }
@@ -105,12 +105,15 @@
         input:checked + .slider { background-color: var(--c-mid); }
         input:checked + .slider:before { transform: translateX(18px); }
 
-        .mode-switch { display: flex; background: var(--white); border-radius: 15px; padding: 4px; }
+        .mode-switch { display: flex; background: var(--white); border-radius: 15px; padding: 4px; margin-bottom: 10px; }
         .mode-btn { flex: 1; padding: 10px; font-size: 0.85rem; background: transparent; color: var(--c-text); border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
         .mode-btn.active { background: var(--c-mid); color: var(--white); }
         
-        select { width: 100%; padding: 12px; border-radius: 15px; border: none; font-size: 1rem; color: var(--c-text); background: var(--white); cursor: pointer; }
+        select { width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid var(--input-border); font-size: 0.9rem; color: var(--c-text); background: var(--input-bg); cursor: pointer; margin-bottom: 10px; }
         input[type="range"] { width: 100%; accent-color: var(--c-mid); }
+        
+        .sub-setting-item { margin-bottom: 12px; }
+        .sub-setting-item:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -156,11 +159,24 @@
 
     <div class="settings-grid" id="settingsGrid">
         <div>
-            <div class="breath-header">
+            <div class="header-with-switch">
+                <span class="label-text">⏱ 停止時間</span>
+                <label class="switch"><input type="checkbox" id="countdownToggle" onchange="toggleCountdown()"><span class="slider"></span></label>
+            </div>
+            <div class="collapsible-settings" id="countdownContainer">
+                <div class="input-group">
+                    <input type="number" id="countdownMinutes" value="30" min="1" onchange="saveSettings()">
+                    <span class="label-text" style="color: var(--c-text); opacity: 0.6;">分鐘後自動停止</span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="header-with-switch">
                 <span class="label-text">🌬 呼吸引導</span>
                 <label class="switch"><input type="checkbox" id="breathToggle" onchange="toggleBreath()"><span class="slider"></span></label>
             </div>
-            <div class="breath-settings" id="breathContainer">
+            <div class="collapsible-settings" id="breathContainer">
                 <div id="breathInputsWrapper">
                     <div class="breath-inputs-item"><small>吸氣(s)</small><input type="number" id="inhaleTime" value="4" min="1" onchange="saveSettings()"></div>
                     <div class="breath-inputs-item"><small>保持(s)</small><input type="number" id="holdTime" value="2" min="0" onchange="saveSettings()"></div>
@@ -168,27 +184,36 @@
                 </div>
             </div>
         </div>
+
         <div>
-            <div class="label-text" style="margin-bottom: 5px;">🎧 輸出模式</div>
-            <div class="mode-switch">
-                <button class="mode-btn" id="modeEarphone" onclick="setMode('earphone')">耳機</button>
-                <button class="mode-btn" id="modeSpeaker" onclick="setMode('speaker')">喇叭</button>
+            <div class="header-with-switch">
+                <span class="label-text">🔊 聲音設置</span>
+                <label class="switch"><input type="checkbox" id="soundSettingToggle" onchange="toggleSoundSetting()"><span class="slider"></span></label>
             </div>
-        </div>
-        <div>
-            <div class="label-text" style="margin-bottom: 5px;">🎵 選擇音色</div>
-            <select id="soundType" onchange="handleSoundChange(this)">
-                <option value="electronic">電子點擊 (經典)</option>
-                <option value="woodblock" selected>圓潤木魚 (推薦)</option>
-                <option value="kick">深沉大鼓 (低音)</option>
-                <option value="bell">清脆銅鈴 (高音)</option>
-                <option value="beep">數位嗶聲 (計時器)</option>
-                <option value="water">柔和水滴 (安靜)</option>
-            </select>
-        </div>
-        <div>
-            <div class="label-text" style="margin-bottom: 5px;">🔈 音量: <span id="volLabel">50</span>%</div>
-            <input type="range" id="volumeControlMain" min="0" max="100" value="50" oninput="updateVolLabel(this.value)" onchange="updateVolFinal(this.value)">
+            <div class="collapsible-settings" id="soundSettingContainer">
+                <div class="sub-setting-item">
+                    <div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🎧 輸出模式</div>
+                    <div class="mode-switch">
+                        <button class="mode-btn" id="modeEarphone" onclick="setMode('earphone')">耳機</button>
+                        <button class="mode-btn" id="modeSpeaker" onclick="setMode('speaker')">喇叭</button>
+                    </div>
+                </div>
+                <div class="sub-setting-item">
+                    <div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🎵 選擇音色</div>
+                    <select id="soundType" onchange="handleSoundChange(this)">
+                        <option value="electronic">電子點擊 (經典)</option>
+                        <option value="woodblock" selected>圓潤木魚 (推薦)</option>
+                        <option value="kick">深沉大鼓 (低音)</option>
+                        <option value="bell">清脆銅鈴 (高音)</option>
+                        <option value="beep">數位嗶聲 (計時器)</option>
+                        <option value="water">柔和水滴 (安靜)</option>
+                    </select>
+                </div>
+                <div class="sub-setting-item">
+                    <div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🔈 音量: <span id="volLabel">50</span>%</div>
+                    <input type="range" id="volumeControlMain" min="0" max="100" value="50" oninput="updateVolLabel(this.value)" onchange="updateVolFinal(this.value)">
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -204,6 +229,8 @@
     let outputMode = localStorage.getItem('runningMode') || 'earphone';
     let currentTheme = localStorage.getItem('runningTheme') || 'rose';
     let breathActive = localStorage.getItem('breathActive') === 'true';
+    let countdownActive = localStorage.getItem('countdownActive') === 'true';
+    let soundSettingActive = localStorage.getItem('soundSettingActive') === 'true';
 
     window.onload = function() {
         document.getElementById('bpmValue').textContent = bpm;
@@ -211,11 +238,20 @@
         document.getElementById('volumeControlFocus').value = volume;
         document.getElementById('volLabel').textContent = volume;
         document.getElementById('soundType').value = soundType;
+        
         document.getElementById('breathToggle').checked = breathActive;
         document.getElementById('inhaleTime').value = localStorage.getItem('inhaleTime') || 4;
         document.getElementById('holdTime').value = localStorage.getItem('holdTime') || 2;
         document.getElementById('exhaleTime').value = localStorage.getItem('exhaleTime') || 6;
         if (breathActive) document.getElementById('breathContainer').classList.add('expanded');
+
+        document.getElementById('countdownToggle').checked = countdownActive;
+        document.getElementById('countdownMinutes').value = localStorage.getItem('countdownMinutes') || 30;
+        if (countdownActive) document.getElementById('countdownContainer').classList.add('expanded');
+
+        document.getElementById('soundSettingToggle').checked = soundSettingActive;
+        if (soundSettingActive) document.getElementById('soundSettingContainer').classList.add('expanded');
+
         setTheme(currentTheme);
         updateModeUI();
     };
@@ -225,23 +261,41 @@
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    function playClick(time) {
+    function playClick(time, isEndSound = false) {
         if (!audioCtx) return;
+        
         const osc = audioCtx.createOscillator();
         const envelope = audioCtx.createGain();
         const modeMultiplier = outputMode === 'speaker' ? 1.0 : 0.15;
         const gainValue = (volume / 100) * modeMultiplier;
-        let decay = 0.04, freq = 1000, type = 'sine';
-        if(soundType==='woodblock'){freq=850; type='triangle'; decay=0.06;}
-        else if(soundType==='kick'){freq=150; type='sine'; decay=0.1;}
-        else if(soundType==='bell'){freq=2500; type='sine'; decay=0.08;}
-        else if(soundType==='beep'){freq=1200; type='square'; decay=0.03;}
-        else if(soundType==='water'){freq=1800; type='sine'; decay=0.02;}
-        osc.type = type; osc.frequency.setValueAtTime(freq, time);
-        envelope.gain.setValueAtTime(gainValue, time);
-        envelope.gain.exponentialRampToValueAtTime(0.0001, time + decay);
-        osc.connect(envelope); envelope.connect(audioCtx.destination);
-        osc.start(time); osc.stop(time + decay);
+        
+        let decay = 0.05, freq = 1000, type = 'sine';
+        
+        if (isEndSound) {
+            freq = 660; type = 'sine'; decay = 0.3; 
+        } else {
+            // 優化各音色參數，增加敲擊一致性
+            if(soundType==='woodblock'){freq=880; type='triangle'; decay=0.06;}
+            else if(soundType==='kick'){freq=120; type='sine'; decay=0.15;}
+            else if(soundType==='bell'){freq=2800; type='sine'; decay=0.1;}
+            else if(soundType==='beep'){freq=1000; type='square'; decay=0.04;}
+            else if(soundType==='water'){freq=1600; type='sine'; decay=0.03;}
+            else if(soundType==='electronic'){freq=1200; type='sine'; decay=0.04;}
+        }
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, time);
+        
+        // 關鍵：平滑包絡線，解決音色抖動感
+        envelope.gain.setValueAtTime(0, time);
+        envelope.gain.linearRampToValueAtTime(gainValue, time + 0.002); // 極快淡入避免 Pop 聲
+        envelope.gain.exponentialRampToValueAtTime(0.001, time + decay); // 自然衰減
+        
+        osc.connect(envelope);
+        envelope.connect(audioCtx.destination);
+        
+        osc.start(time);
+        osc.stop(time + decay + 0.1);
     }
 
     function startRunning() {
@@ -249,9 +303,10 @@
         audioCtx.resume().then(() => {
             isRunning = true; isPaused = false; secondsElapsed = 0;
             refreshTimerUI();
-            const now = audioCtx.currentTime;
-            if (!isMuted) playClick(now);
-            nextTickTime = now + (60.0 / bpm);
+            
+            // 確保從當前音訊時間開始，但不產生瞬間重疊
+            nextTickTime = audioCtx.currentTime + 0.05; 
+            
             document.getElementById('timerSection').classList.add('active');
             document.getElementById('appContainer').classList.add('running');
             if (breathActive) startBreathAnimation();
@@ -289,10 +344,29 @@
         if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); 
     }
 
+    function toggleCountdown() {
+        countdownActive = document.getElementById('countdownToggle').checked;
+        const container = document.getElementById('countdownContainer');
+        if (countdownActive) container.classList.add('expanded');
+        else container.classList.remove('expanded');
+        saveSettings();
+    }
+
+    function toggleSoundSetting() {
+        soundSettingActive = document.getElementById('soundSettingToggle').checked;
+        const container = document.getElementById('soundSettingContainer');
+        if (soundSettingActive) container.classList.add('expanded');
+        else container.classList.remove('expanded');
+        saveSettings();
+    }
+
     function saveSettings() {
         localStorage.setItem('runningBpm', bpm); localStorage.setItem('runningVol', volume);
         localStorage.setItem('runningSound', soundType); localStorage.setItem('runningMode', outputMode);
         localStorage.setItem('breathActive', breathActive); localStorage.setItem('runningTheme', currentTheme);
+        localStorage.setItem('countdownActive', countdownActive);
+        localStorage.setItem('soundSettingActive', soundSettingActive);
+        localStorage.setItem('countdownMinutes', document.getElementById('countdownMinutes').value);
         localStorage.setItem('inhaleTime', document.getElementById('inhaleTime').value);
         localStorage.setItem('holdTime', document.getElementById('holdTime').value);
         localStorage.setItem('exhaleTime', document.getElementById('exhaleTime').value);
@@ -313,7 +387,23 @@
         document.getElementById('volLabel').textContent = val;
         saveSettings(); if (audioCtx) playClick(audioCtx.currentTime);
     }
-    function updateClock() { if (isRunning && !isPaused) { secondsElapsed++; refreshTimerUI(); } }
+
+    function updateClock() { 
+        if (isRunning && !isPaused) { 
+            secondsElapsed++; 
+            refreshTimerUI(); 
+            if (countdownActive) {
+                const targetSeconds = parseInt(document.getElementById('countdownMinutes').value) * 60;
+                if (secondsElapsed >= targetSeconds) {
+                    const now = audioCtx.currentTime;
+                    playClick(now, true);
+                    playClick(now + 0.33, true); 
+                    setTimeout(stopRunning, 800);
+                }
+            }
+        } 
+    }
+
     function refreshTimerUI() {
         const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60;
         const hG = document.getElementById('hGroup');
@@ -329,7 +419,8 @@
         else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`;
     }
     function pauseRunning() { isPaused = true; clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); }
-    function resumeRunning() { isPaused = false; initAudio(); const now = audioCtx.currentTime; if (!isMuted) playClick(now); nextTickTime = now + (60.0 / bpm); if (breathActive) startBreathAnimation(); scheduler(); updateButtonUI(); }
+    function resumeRunning() { isPaused = false; initAudio(); nextTickTime = audioCtx.currentTime; if (breathActive) startBreathAnimation(); scheduler(); updateButtonUI(); }
+    
     function startBreathAnimation() { 
         const circle = document.getElementById('breathCircle'); circle.style.display = 'block'; 
         const inT = parseFloat(document.getElementById('inhaleTime').value)||4; const hT = parseFloat(document.getElementById('holdTime').value)||2; const exT = parseFloat(document.getElementById('exhaleTime').value)||6; const totalT = inT+hT+exT; 
@@ -337,7 +428,12 @@
     }
     function stopBreathAnimation() { document.getElementById('breathCircle').getAnimations().forEach(anim=>anim.cancel()); document.getElementById('breathCircle').style.display='none'; }
     function setMode(mode) { outputMode = mode; updateModeUI(); saveSettings(); if(audioCtx) playClick(audioCtx.currentTime); }
-    function updateModeUI() { document.getElementById('modeEarphone').classList.toggle('active', outputMode==='earphone'); document.getElementById('modeSpeaker').classList.toggle('active', outputMode==='speaker'); }
+    function updateModeUI() { 
+        const earphoneBtn = document.getElementById('modeEarphone');
+        const speakerBtn = document.getElementById('modeSpeaker');
+        if(earphoneBtn) earphoneBtn.classList.toggle('active', outputMode==='earphone'); 
+        if(speakerBtn) speakerBtn.classList.toggle('active', outputMode==='speaker'); 
+    }
     function adjustBPM(amount) { bpm += amount; if(bpm<100) bpm=100; document.getElementById('bpmValue').textContent = bpm; saveSettings(); }
     function handleSoundChange(el) { soundType = el.value; saveSettings(); if(audioCtx) playClick(audioCtx.currentTime); }
     function handleVolClick(e) { if(clickTimer){clearTimeout(clickTimer);clickTimer=null;return;} clickTimer=setTimeout(()=>{ isMuted=!isMuted; document.getElementById('volIcon').textContent=isMuted?'🔇':'🔊'; document.getElementById('volIcon').style.opacity=isMuted?'0.4':'1'; clickTimer=null; },250); }
