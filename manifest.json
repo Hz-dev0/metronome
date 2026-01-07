@@ -1,5 +1,5 @@
 {
-  "name": "跑步節拍器 PWA",
+  "name": "跑步節拍器",
   "short_name": "跑步節拍",
   "description": "具備呼吸引導與音樂功能的跑步節拍器",
   "start_url": "./index.html",
