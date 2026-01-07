@@ -1,4 +1,4 @@
-const CACHE_NAME = 'running-metronome-v2'; // 升級版本號以強制更新
+const CACHE_NAME = 'running-metronome-v3'; // 升級版本號以強制更新
 const ASSETS = [
   './',
   './index.html',
