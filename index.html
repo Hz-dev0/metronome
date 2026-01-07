@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>跑步節拍器</title>
+    <title>跑步節拍器 PWA</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#D6B2BC">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3843/3843034.png">
+
     <style>
         :root {
             --bg-page: #F7EDEF; --c-mid: #D6B2BC; --c-dark: #B38C97; --c-light: #EDD3D7; --c-text: #8E6E77;
@@ -66,7 +73,6 @@
         .running .btn-stop { width: 130px; border-width: 3px; font-size: 1.2rem; background: rgba(255,255,255,0.2); color: var(--c-mid); border: 2px solid var(--c-light); }
         .btn-stop { background-color: transparent; color: var(--c-mid); border: 2px solid var(--c-light); width: 100px; }
 
-        /* --- 修正後的開關列排版 --- */
         .switches-row { 
             display: flex; justify-content: space-between; align-items: center; 
             width: 100%; max-width: 260px; margin-top: 4px; padding-bottom: 8px;
@@ -193,7 +199,7 @@
 
         <div>
             <div class="header-with-switch">
-                <span class="label-text">🌬 呼吸引導</span>
+                <span class="label-text">🌬 呼呼吸引導</span>
                 <label class="switch"><input type="checkbox" id="breathToggle" onchange="toggleBreath()"><span class="slider"></span></label>
             </div>
             <div class="collapsible-settings" id="breathContainer">
@@ -220,12 +226,20 @@
 </div>
 
 <script>
+    // 註冊 Service Worker (PWA 關鍵)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => console.log('SW 註冊成功'))
+                .catch(err => console.log('SW 註冊失敗', err));
+        });
+    }
+
     let audioCtx = null, timerID = null, clockInterval = null;
     let isRunning = false, isPaused = false, isMuted = false;
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null, debounceTimer = null;
     let wakeLock = null;
     
-    // 背景音樂相關
     const bgMusic = new Audio('./music.mp3');
     bgMusic.loop = true;
 
@@ -238,7 +252,7 @@
     let countdownActive = localStorage.getItem('countdownActive') === 'true';
     let soundSettingActive = localStorage.getItem('soundSettingActive') === 'true';
     let wakeLockEnabled = localStorage.getItem('wakeLockEnabled') !== 'false';
-    let musicEnabled = localStorage.getItem('musicEnabled') === 'true'; // 音樂預設關閉或讀取儲存
+    let musicEnabled = localStorage.getItem('musicEnabled') === 'true';
 
     const SVG_SPEAKER = `<svg class="vol-icon-svg" viewBox="0 0 24 24"><path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.03,19.86 21,16.28 21,12C21,7.72 18.03,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/></svg>`;
     const SVG_MUTE = `<svg class="vol-icon-svg vol-muted" viewBox="0 0 24 24"><path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18.03,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.48,12.43 16.5,12.22 16.5,12Z"/></svg>`;
@@ -270,14 +284,9 @@
     function renderVolIcon() { document.getElementById('volIconWrapper').innerHTML = isMuted ? SVG_MUTE : SVG_SPEAKER; }
     async function requestWakeLock() { if (!wakeLockEnabled) return; try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
     function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
-    
-    function initAudio() { 
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
-        if (audioCtx.state === 'suspended') audioCtx.resume(); 
-    }
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
 
     function updateMusicVolume() {
-        // 音樂音量稍微調低一點點，避免蓋過節拍聲，並受主音量與輸出模式影響
         const modeMultiplier = outputMode === 'speaker' ? 0.8 : 0.4;
         bgMusic.volume = (volume / 100) * modeMultiplier;
         bgMusic.muted = isMuted;
@@ -312,14 +321,7 @@
             document.getElementById('timerSection').classList.add('active');
             document.getElementById('appContainer').classList.add('running');
             if (breathActive) startBreathAnimation();
-            
-            // 音樂控制
-            if (musicEnabled) {
-                updateMusicVolume();
-                bgMusic.currentTime = 0;
-                bgMusic.play().catch(e => console.log("音樂播放失敗", e));
-            }
-
+            if (musicEnabled) { updateMusicVolume(); bgMusic.currentTime = 0; bgMusic.play().catch(e => console.log(e)); }
             scheduler(); if (clockInterval) clearInterval(clockInterval);
             clockInterval = setInterval(updateClock, 1000); updateButtonUI();
         });
@@ -335,20 +337,12 @@
     }
 
     function stopRunning() { 
-        isRunning = false; isPaused = false; 
-        releaseWakeLock(); 
-        clearTimeout(timerID); 
-        if (clockInterval) clearInterval(clockInterval); 
-        clockInterval = null; 
-        secondsElapsed = 0; 
-        document.getElementById('appContainer').classList.remove('running'); 
+        isRunning = false; isPaused = false; releaseWakeLock(); clearTimeout(timerID); 
+        if (clockInterval) clearInterval(clockInterval); clockInterval = null; 
+        secondsElapsed = 0; document.getElementById('appContainer').classList.remove('running'); 
         document.getElementById('timerSection').classList.remove('active'); 
-        refreshTimerUI(); 
-        stopBreathAnimation(); 
-        updateButtonUI(); 
-        // 音樂停止
-        bgMusic.pause();
-        bgMusic.currentTime = 0;
+        refreshTimerUI(); stopBreathAnimation(); updateButtonUI(); 
+        bgMusic.pause(); bgMusic.currentTime = 0;
     }
 
     function toggleBreath() { breathActive = document.getElementById('breathToggle').checked; const container = document.getElementById('breathContainer'); if (breathActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); }
@@ -377,57 +371,20 @@
         saveSettings();
     }
 
-    function updateVolLabel(val) { 
-        document.getElementById('volLabel').textContent = val; 
-        volume = val;
-        updateMusicVolume();
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            initAudio(); if (audioCtx) playClick(audioCtx.currentTime);
-        }, 50);
-    }
-
-    function updateVolFinal(val) {
-        volume = val; document.getElementById('volumeControlMain').value = val;
-        document.getElementById('volumeControlFocus').value = val;
-        document.getElementById('volLabel').textContent = val;
-        updateMusicVolume();
-        saveSettings();
-    }
-
+    function updateVolLabel(val) { document.getElementById('volLabel').textContent = val; volume = val; updateMusicVolume(); if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { initAudio(); if (audioCtx) playClick(audioCtx.currentTime); }, 50); }
+    function updateVolFinal(val) { volume = val; document.getElementById('volumeControlMain').value = val; document.getElementById('volumeControlFocus').value = val; document.getElementById('volLabel').textContent = val; updateMusicVolume(); saveSettings(); }
     function updateClock() { if (isRunning && !isPaused) { secondsElapsed++; refreshTimerUI(); if (countdownActive) { const targetSeconds = parseInt(document.getElementById('countdownMinutes').value) * 60; if (secondsElapsed >= targetSeconds) { const now = audioCtx.currentTime; playClick(now, true); playClick(now + 0.3, true); setTimeout(stopRunning, 1000); } } } }
     function refreshTimerUI() { const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60; const hG = document.getElementById('hGroup'); const tDisp = document.getElementById('timerDisplay'); if (hrs > 0) { hG.style.display = 'inline-block'; tDisp.classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; } else { hG.style.display = 'none'; tDisp.classList.remove('long-time'); } document.getElementById('m1').textContent = Math.floor(mins/10); document.getElementById('m2').textContent = mins%10; document.getElementById('s1').textContent = Math.floor(secs/10); document.getElementById('s2').textContent = secs%10; }
     function updateButtonUI() { const row = document.getElementById('initialBtnRow'); if (!isRunning) row.innerHTML = `<button class="btn-base btn-start" onclick="startRunning()">開始跑步</button>`; else if (isPaused) row.innerHTML = `<button class="btn-base btn-resume" onclick="resumeRunning()">繼續</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; }
-    
-    function pauseRunning() { 
-        isPaused = true; releaseWakeLock(); clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); 
-        bgMusic.pause();
-    }
-    
-    function resumeRunning() { 
-        isPaused = false; initAudio(); requestWakeLock(); nextTickTime = audioCtx.currentTime; 
-        if (breathActive) startBreathAnimation(); 
-        if (musicEnabled) bgMusic.play();
-        scheduler(); updateButtonUI(); 
-    }
-    
+    function pauseRunning() { isPaused = true; releaseWakeLock(); clearTimeout(timerID); stopBreathAnimation(); updateButtonUI(); bgMusic.pause(); }
+    function resumeRunning() { isPaused = false; initAudio(); requestWakeLock(); nextTickTime = audioCtx.currentTime; if (breathActive) startBreathAnimation(); if (musicEnabled) bgMusic.play(); scheduler(); updateButtonUI(); }
     function startBreathAnimation() { const circle = document.getElementById('breathCircle'); circle.style.display = 'block'; const inT = parseFloat(document.getElementById('inhaleTime').value)||4; const hT = parseFloat(document.getElementById('holdTime').value)||2; const exT = parseFloat(document.getElementById('exhaleTime').value)||6; const totalT = inT+hT+exT; circle.animate([{transform:'translate(-50%,-50%) scale(0.1)', offset:0},{transform:'translate(-50%,-50%) scale(1)', offset:inT/totalT},{transform:'translate(-50%,-50%) scale(1)', offset:(inT+hT)/totalT},{transform:'translate(-50%,-50%) scale(0.1)', offset:1}],{duration:totalT*1000, iterations:Infinity, easing:'linear'}); }
     function stopBreathAnimation() { document.getElementById('breathCircle').getAnimations().forEach(anim=>anim.cancel()); document.getElementById('breathCircle').style.display='none'; }
     function setMode(mode) { outputMode = mode; updateModeUI(); updateMusicVolume(); saveSettings(); initAudio(); if(audioCtx) playClick(audioCtx.currentTime); }
     function updateModeUI() { const earphoneBtn = document.getElementById('modeEarphone'); const speakerBtn = document.getElementById('modeSpeaker'); if(earphoneBtn) earphoneBtn.classList.toggle('active', outputMode==='earphone'); if(speakerBtn) speakerBtn.classList.toggle('active', outputMode==='speaker'); }
     function adjustBPM(amount) { bpm += amount; if(bpm<100) bpm=100; document.getElementById('bpmValue').textContent = bpm; saveSettings(); }
     function handleSoundChange(el) { soundType = el.value; saveSettings(); initAudio(); if(audioCtx) playClick(audioCtx.currentTime); }
-    
-    function handleVolClick(e) { 
-        if(clickTimer){clearTimeout(clickTimer);clickTimer=null;return;} 
-        clickTimer=setTimeout(()=>{ 
-            isMuted=!isMuted; 
-            renderVolIcon(); 
-            updateMusicVolume();
-            clickTimer=null; 
-        },250); 
-    }
-    
+    function handleVolClick(e) { if(clickTimer){clearTimeout(clickTimer);clickTimer=null;return;} clickTimer=setTimeout(()=>{ isMuted=!isMuted; renderVolIcon(); updateMusicVolume(); clickTimer=null; },250); }
     function handleVolDblClick(e) { clearTimeout(clickTimer); clickTimer=null; const slider = document.getElementById('quickVolSlider'); slider.style.display = (slider.style.display === 'block') ? 'none' : 'block'; }
 </script>
 </body>
