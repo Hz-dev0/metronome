@@ -93,17 +93,21 @@
             transform: translate(-50%, -50%); color: var(--c-mid); font-size: 14px; font-weight: bold;
         }
 
-        .quick-volume { display: none; flex-direction: column; align-items: center; gap: 15px; width: 250px; margin-top: 20px; }
+        /* 修改處：移除白框框背景 */
+        .quick-volume { display: none; flex-direction: column; align-items: center; gap: 15px; width: 280px; margin-top: 20px; background: none; border: none; }
         .running .quick-volume { display: flex; }
         .vol-icon-svg { width: 48px; height: 48px; cursor: pointer; fill: var(--c-mid); transition: fill 0.2s, transform 0.1s; }
         .vol-icon-svg:active { transform: scale(0.9); }
         .vol-muted { fill: var(--c-text); opacity: 0.4; }
 
+        .vol-slider-row { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+        .vol-slider-row label { font-size: 0.8rem; font-weight: bold; color: var(--c-mid); display: flex; justify-content: space-between; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+
         .settings-grid { display: grid; gap: 12px; margin-top: 0; text-align: left; background: var(--setting-bg); padding: 18px; border-radius: 30px; width: 100%; box-sizing: border-box; }
         .header-with-switch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .label-text { font-size: 0.85rem; color: var(--c-mid); font-weight: 800; }
         .collapsible-settings { background: var(--white); border-radius: 20px; max-height: 0; overflow: hidden; transition: all 0.3s ease-out; padding: 0 12px; opacity: 0; }
-        .collapsible-settings.expanded { max-height: 250px; padding: 12px; opacity: 1; margin-top: 5px; }
+        .collapsible-settings.expanded { max-height: 400px; padding: 12px; opacity: 1; margin-top: 5px; }
         
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -174,10 +178,17 @@
                 </label>
             </div>
 
-            <div class="quick-volume">
+            <div class="quick-volume" id="quickVolGroup">
                 <div id="volIconWrapper" onclick="handleVolClick(event)" ondblclick="handleVolDblClick(event)"></div>
-                <div id="quickVolSlider" style="display:none; width:100%;">
-                    <input type="range" id="volumeControlFocus" min="0" max="100" value="50" oninput="updateVolFinal(this.value)">
+                <div id="quickVolSlider" style="display:none; width:100%; flex-direction: column; gap: 15px; margin-top: 10px;">
+                    <div class="vol-slider-row">
+                        <label>節拍器音量 <span id="qMetVolLab">50</span>%</label>
+                        <input type="range" id="volMetFocus" min="0" max="100" value="50" oninput="updateMetVol(this.value)">
+                    </div>
+                    <div class="vol-slider-row">
+                        <label>音樂音量 <span id="qMusVolLab">50</span>%</label>
+                        <input type="range" id="volMusFocus" min="0" max="100" value="50" oninput="updateMusVol(this.value)">
+                    </div>
                 </div>
             </div>
         </div>
@@ -219,19 +230,24 @@
             <div class="collapsible-settings" id="soundSettingContainer">
                 <div class="sub-setting-item"><div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🎧 輸出模式</div><div class="mode-switch"><button class="mode-btn" id="modeEarphone" onclick="setMode('earphone')">耳機</button><button class="mode-btn" id="modeSpeaker" onclick="setMode('speaker')">喇叭</button></div></div>
                 <div class="sub-setting-item"><div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🎵 選擇音色</div><select id="soundType" onchange="handleSoundChange(this)"><option value="electronic">電子點擊 (經典)</option><option value="woodblock" selected>圓潤木魚 (推薦)</option><option value="kick">深沉大鼓 (低音)</option><option value="bell">清脆銅鈴 (高音)</option><option value="beep">數位嗶聲 (計時器)</option><option value="water">柔和水滴 (安靜)</option></select></div>
-                <div class="sub-setting-item"><div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🔈 音量: <span id="volLabel">50</span>%</div><input type="range" id="volumeControlMain" min="0" max="100" value="50" oninput="updateVolLabel(this.value)" onchange="updateVolFinal(this.value)"></div>
+                
+                <div class="sub-setting-item" style="margin-top: 10px;">
+                    <div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🔈 節拍音量: <span id="volMetLabel">50</span>%</div>
+                    <input type="range" id="volMetMain" min="0" max="100" value="50" oninput="updateMetVol(this.value)">
+                </div>
+                <div class="sub-setting-item" style="margin-top: 10px;">
+                    <div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🎵 音樂音量: <span id="volMusLabel">50</span>%</div>
+                    <input type="range" id="volMusMain" min="0" max="100" value="50" oninput="updateMusVol(this.value)">
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // 註冊 Service Worker (PWA 關鍵)
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then(reg => console.log('SW 註冊成功'))
-                .catch(err => console.log('SW 註冊失敗', err));
+            navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('SW fail', err));
         });
     }
 
@@ -240,7 +256,6 @@
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null, debounceTimer = null;
     let wakeLock = null;
     
-    // --- 關鍵修改：背景音樂初始化 (解決 GitHub Pages 跨域) ---
     const bgMusic = new Audio();
     bgMusic.crossOrigin = "anonymous"; 
     bgMusic.src = 'https://res.cloudinary.com/dvbwcjpdu/video/upload/v1767812963/music_1_xih1u2.mp3';
@@ -248,7 +263,8 @@
     bgMusic.preload = "auto";
 
     let bpm = parseInt(localStorage.getItem('runningBpm')) || 180;
-    let volume = parseInt(localStorage.getItem('runningVol')) || 50;
+    let volMet = parseInt(localStorage.getItem('volMet')) || 50;
+    let volMus = parseInt(localStorage.getItem('volMus')) || 50;
     let soundType = localStorage.getItem('runningSound') || 'woodblock';
     let outputMode = localStorage.getItem('runningMode') || 'earphone';
     let currentTheme = localStorage.getItem('runningTheme') || 'rose';
@@ -263,10 +279,15 @@
 
     window.onload = function() {
         document.getElementById('bpmValue').textContent = bpm;
-        document.getElementById('volumeControlMain').value = volume;
-        document.getElementById('volumeControlFocus').value = volume;
-        document.getElementById('volLabel').textContent = volume;
         document.getElementById('soundType').value = soundType;
+        document.getElementById('volMetMain').value = volMet;
+        document.getElementById('volMetFocus').value = volMet;
+        document.getElementById('volMetLabel').textContent = volMet;
+        document.getElementById('qMetVolLab').textContent = volMet;
+        document.getElementById('volMusMain').value = volMus;
+        document.getElementById('volMusFocus').value = volMus;
+        document.getElementById('volMusLabel').textContent = volMus;
+        document.getElementById('qMusVolLab').textContent = volMus;
         document.getElementById('breathToggle').checked = breathActive;
         document.getElementById('inhaleTime').value = localStorage.getItem('inhaleTime') || 4;
         document.getElementById('holdTime').value = localStorage.getItem('holdTime') || 2;
@@ -290,18 +311,42 @@
     function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
 
+    function updateMetVol(val) {
+        volMet = val;
+        document.getElementById('volMetMain').value = val;
+        document.getElementById('volMetFocus').value = val;
+        document.getElementById('volMetLabel').textContent = val;
+        document.getElementById('qMetVolLab').textContent = val;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => { 
+            initAudio(); 
+            if (audioCtx && isRunning && !isPaused) playClick(audioCtx.currentTime); 
+        }, 50);
+        saveSettings();
+    }
+
+    function updateMusVol(val) {
+        volMus = val;
+        document.getElementById('volMusMain').value = val;
+        document.getElementById('volMusFocus').value = val;
+        document.getElementById('volMusLabel').textContent = val;
+        document.getElementById('qMusVolLab').textContent = val;
+        updateMusicVolume();
+        saveSettings();
+    }
+
     function updateMusicVolume() {
         const modeMultiplier = outputMode === 'speaker' ? 0.8 : 0.4;
-        bgMusic.volume = (volume / 100) * modeMultiplier;
+        bgMusic.volume = (volMus / 100) * modeMultiplier;
         bgMusic.muted = isMuted;
     }
 
     function playClick(time, isEndSound = false) {
-        if (!audioCtx) return;
+        if (!audioCtx || isMuted) return;
         const osc = audioCtx.createOscillator();
         const envelope = audioCtx.createGain();
         const modeMultiplier = outputMode === 'speaker' ? 1.0 : 0.15;
-        const gainValue = (volume / 100) * modeMultiplier;
+        const gainValue = (volMet / 100) * modeMultiplier;
         let decay = 0.05, freq = 1000, type = 'sine';
         if (isEndSound) { freq = 660; type = 'sine'; decay = 0.3; } else {
             if(soundType==='woodblock'){freq=880; type='triangle'; decay=0.06;}
@@ -325,11 +370,7 @@
             document.getElementById('timerSection').classList.add('active');
             document.getElementById('appContainer').classList.add('running');
             if (breathActive) startBreathAnimation();
-            if (musicEnabled) { 
-                updateMusicVolume(); 
-                bgMusic.currentTime = 0; 
-                bgMusic.play().catch(e => console.error("音樂播放失敗:", e)); 
-            }
+            if (musicEnabled) { updateMusicVolume(); bgMusic.currentTime = 0; bgMusic.play().catch(e => console.error(e)); }
             scheduler(); if (clockInterval) clearInterval(clockInterval);
             clockInterval = setInterval(updateClock, 1000); updateButtonUI();
         });
@@ -338,7 +379,7 @@
     function scheduler() {
         if (!isRunning || isPaused) return;
         while (nextTickTime < audioCtx.currentTime + 0.1) {
-            if (!isMuted) playClick(nextTickTime);
+            playClick(nextTickTime);
             nextTickTime += 60.0 / bpm;
         }
         timerID = setTimeout(scheduler, 25);
@@ -349,7 +390,8 @@
         if (clockInterval) clearInterval(clockInterval); clockInterval = null; 
         secondsElapsed = 0; document.getElementById('appContainer').classList.remove('running'); 
         document.getElementById('timerSection').classList.remove('active'); 
-        refreshTimerUI(); stopBreathAnimation(); updateButtonUI(); 
+        document.getElementById('quickVolSlider').style.display = 'none';
+        stopBreathAnimation(); updateButtonUI(); 
         bgMusic.pause(); bgMusic.currentTime = 0;
     }
 
@@ -360,12 +402,13 @@
     function saveSettings() {
         wakeLockEnabled = document.getElementById('wakeLockToggle').checked;
         musicEnabled = document.getElementById('musicToggle').checked;
-        localStorage.setItem('runningBpm', bpm); localStorage.setItem('runningVol', volume);
+        localStorage.setItem('runningBpm', bpm); 
+        localStorage.setItem('volMet', volMet);
+        localStorage.setItem('volMus', volMus);
         localStorage.setItem('runningSound', soundType); localStorage.setItem('runningMode', outputMode);
         localStorage.setItem('breathActive', breathActive); localStorage.setItem('runningTheme', currentTheme);
         localStorage.setItem('countdownActive', countdownActive); localStorage.setItem('soundSettingActive', soundSettingActive);
-        localStorage.setItem('wakeLockEnabled', wakeLockEnabled);
-        localStorage.setItem('musicEnabled', musicEnabled);
+        localStorage.setItem('wakeLockEnabled', wakeLockEnabled); localStorage.setItem('musicEnabled', musicEnabled);
         localStorage.setItem('countdownMinutes', document.getElementById('countdownMinutes').value);
         localStorage.setItem('inhaleTime', document.getElementById('inhaleTime').value);
         localStorage.setItem('holdTime', document.getElementById('holdTime').value);
@@ -379,8 +422,6 @@
         saveSettings();
     }
 
-    function updateVolLabel(val) { document.getElementById('volLabel').textContent = val; volume = val; updateMusicVolume(); if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { initAudio(); if (audioCtx) playClick(audioCtx.currentTime); }, 50); }
-    function updateVolFinal(val) { volume = val; document.getElementById('volumeControlMain').value = val; document.getElementById('volumeControlFocus').value = val; document.getElementById('volLabel').textContent = val; updateMusicVolume(); saveSettings(); }
     function updateClock() { if (isRunning && !isPaused) { secondsElapsed++; refreshTimerUI(); if (countdownActive) { const targetSeconds = parseInt(document.getElementById('countdownMinutes').value) * 60; if (secondsElapsed >= targetSeconds) { const now = audioCtx.currentTime; playClick(now, true); playClick(now + 0.3, true); setTimeout(stopRunning, 1000); } } } }
     function refreshTimerUI() { const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60; const hG = document.getElementById('hGroup'); const tDisp = document.getElementById('timerDisplay'); if (hrs > 0) { hG.style.display = 'inline-block'; tDisp.classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; } else { hG.style.display = 'none'; tDisp.classList.remove('long-time'); } document.getElementById('m1').textContent = Math.floor(mins/10); document.getElementById('m2').textContent = mins%10; document.getElementById('s1').textContent = Math.floor(secs/10); document.getElementById('s2').textContent = secs%10; }
     function updateButtonUI() { const row = document.getElementById('initialBtnRow'); if (!isRunning) row.innerHTML = `<button class="btn-base btn-start" onclick="startRunning()">開始跑步</button>`; else if (isPaused) row.innerHTML = `<button class="btn-base btn-resume" onclick="resumeRunning()">繼續</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; }
@@ -393,8 +434,7 @@
     function adjustBPM(amount) { bpm += amount; if(bpm<100) bpm=100; document.getElementById('bpmValue').textContent = bpm; saveSettings(); }
     function handleSoundChange(el) { soundType = el.value; saveSettings(); initAudio(); if(audioCtx) playClick(audioCtx.currentTime); }
     function handleVolClick(e) { if(clickTimer){clearTimeout(clickTimer);clickTimer=null;return;} clickTimer=setTimeout(()=>{ isMuted=!isMuted; renderVolIcon(); updateMusicVolume(); clickTimer=null; },250); }
-    function handleVolDblClick(e) { clearTimeout(clickTimer); clickTimer=null; const slider = document.getElementById('quickVolSlider'); slider.style.display = (slider.style.display === 'block') ? 'none' : 'block'; }
+    function handleVolDblClick(e) { clearTimeout(clickTimer); clickTimer=null; const slider = document.getElementById('quickVolSlider'); slider.style.display = (slider.style.display === 'flex') ? 'none' : 'flex'; }
 </script>
 </body>
 </html>
-
