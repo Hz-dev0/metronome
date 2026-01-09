@@ -4,8 +4,8 @@
   "description": "具備呼吸引導與音樂功能的跑步節拍器",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#F7EDEF",
-  "theme_color": "#D6B2BC",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "icons": [
     {
       "src": "app_icon.png",
