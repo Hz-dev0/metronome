@@ -21,18 +21,17 @@
         [data-theme="ocean"] { --bg-page: #E3F2FD; --c-mid: #90B4D9; --c-dark: #5F89B3; --c-light: #C1D5EB; --c-text: #455A64; --setting-bg: #ECF3F9; --input-bg: #E3F2FD; --input-border: #C1D5EB; }
         [data-theme="forest"] { --bg-page: #F1F8E9; --c-mid: #ACC490; --c-dark: #7D9462; --c-light: #DCEDC8; --c-text: #4F5D3D; --setting-bg: #F9FBF7; --input-bg: #F1F8E9; --input-border: #DCEDC8; }
 
-        * { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+        * { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; box-sizing: border-box; }
         input[type="number"], input[type="text"], select { user-select: text; -webkit-user-select: text; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex; justify-content: center; align-items: center;
-            height: 100vh; margin: 0; background-color: var(--bg-page);
+            height: 100vh; background-color: var(--bg-page);
             transition: background-color 0.3s; color: var(--c-text);
             overflow: hidden; position: relative;
         }
 
-        /* 更新提示框樣式 */
         #update-toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: var(--c-dark); color: white; padding: 12px 24px;
@@ -40,26 +39,38 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000;
             display: none; cursor: pointer; animation: fadeInUp 0.5s ease;
         }
-        @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
-        .folder-tabs { position: absolute; left: 100%; top: 50px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
-        .tab { width: 14px; height: 35px; border-radius: 0 6px 6px 0; cursor: pointer; border: none; opacity: 0.7; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
-        .tab.active { opacity: 1; width: 22px; }
-        .tab-rose { background-color: #D6B2BC; } .tab-purple { background-color: #D6B8D3; } .tab-ocean { background-color: #90B4D9; } .tab-forest { background-color: #ACC490; }
+        /* 絕對緊貼頂部 */
+        .folder-tabs { 
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: row; gap: 8px; z-index: 100; 
+            padding-top: 0; /* 移除內距確保貼邊 */
+        }
+        .tab { 
+            width: 40px; height: 15px; border-radius: 0 0 10px 10px; 
+            cursor: pointer; border: none; opacity: 0.5; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s ease;
+        }
+        .tab.active { opacity: 1; height: 22px; width: 50px; }
+        .tab-rose { background-color: #D6B2BC; } 
+        .tab-purple { background-color: #D6B8D3; } 
+        .tab-ocean { background-color: #90B4D9; } 
+        .tab-forest { background-color: #ACC490; }
 
         .container {
             background: var(--white); padding: 2.2rem 1.5rem; border-radius: 40px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.06); text-align: center; 
             width: 340px; transition: all 0.3s ease;
             z-index: 10; display: flex; flex-direction: column; align-items: center; position: relative; 
+            margin-top: 10px; /* 稍微推開避免視覺太擠 */
         }
 
-        .container.running { background: transparent; box-shadow: none; width: 100vw; height: 100vh; padding: 0; justify-content: space-evenly; border-radius: 0; }
+        .container.running { background: transparent; box-shadow: none; width: 100vw; height: 100vh; padding: 0; justify-content: space-evenly; border-radius: 0; margin-top: 0; }
         .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .switches-row { display: none !important; }
 
+        /* 其餘 CSS 保持不變 */
         .running-content-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; justify-content: center; }
         .running .running-content-wrapper { height: 90%; }
-
         .timer-section { display: none; width: 100%; }
         .timer-section.active { display: block; }
         .timer-display { display: flex; justify-content: center; align-items: center; font-weight: 700; color: var(--c-mid); font-variant-numeric: tabular-nums; }
@@ -67,15 +78,12 @@
         .running .timer-display { font-size: min(28vw, 22vh); font-weight: 800; line-height: 1; margin-bottom: 2vh; }
         .digit { display: inline-block; text-align: center; width: 0.65em; }
         .sep { display: inline-block; text-align: center; width: 0.25em; }
-
         .bpm-controls-wrapper { display: flex; justify-content: center; align-items: center; gap: 25px; margin-bottom: 5px; }
         .bpm-text { font-size: 4.2rem; font-weight: 800; color: var(--c-mid); line-height: 0.8; }
         .unit-label { font-size: 0.8rem; color: var(--c-text); opacity: 0.5; font-weight: bold; margin-top: 8px; letter-spacing: 2px; }
-
         #breathCircle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.1); width: 90vh; height: 90vh; background-color: var(--c-mid); border-radius: 50%; opacity: 0.15; z-index: -1; display: none; }
         .btn-round { width: 55px; height: 55px; border-radius: 50%; background-color: var(--white); color: var(--c-mid); border: 2px solid var(--c-light); font-size: 1.8rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn-round:active { transform: scale(0.9); }
-
         .main-controls { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; align-items: center; width: 100%; }
         .btn-row { display: flex; gap: 12px; width: 100%; justify-content: center; }
         .btn-base { padding: 18px; font-size: 1.1rem; border: none; border-radius: 25px; font-weight: 700; cursor: pointer; transition: 0.2s; }
@@ -83,79 +91,56 @@
         .running .btn-base { padding: 22px 40px; font-size: 1.4rem; border-radius: 30px; }
         .running .btn-stop { width: 130px; border-width: 3px; font-size: 1.2rem; background: rgba(255,255,255,0.2); color: var(--c-mid); border: 2px solid var(--c-light); }
         .btn-stop { background-color: transparent; color: var(--c-mid); border: 2px solid var(--c-light); width: 100px; }
-
-        .switches-row { 
-            display: flex; justify-content: space-between; align-items: center; 
-            width: 100%; max-width: 260px; margin-top: 4px; padding-bottom: 8px;
-        }
-        .toggle-item {
-            display: flex; align-items: center; gap: 6px;
-            cursor: pointer; color: var(--c-mid); font-weight: 600; font-size: 0.9rem;
-        }
-        .toggle-item input { 
-            cursor: pointer; width: 18px; height: 18px; 
-            appearance: none; -webkit-appearance: none;
-            background-color: var(--white); border: 2px solid var(--c-light);
-            border-radius: 4px; position: relative; transition: all 0.2s; flex-shrink: 0;
-        }
+        .switches-row { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 260px; margin-top: 4px; padding-bottom: 8px; }
+        .toggle-item { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--c-mid); font-weight: 600; font-size: 0.9rem; }
+        .toggle-item input { cursor: pointer; width: 18px; height: 18px; appearance: none; -webkit-appearance: none; background-color: var(--white); border: 2px solid var(--c-light); border-radius: 4px; position: relative; transition: all 0.2s; flex-shrink: 0; }
         .toggle-item input:checked { background-color: var(--bg-page); border-color: var(--c-mid); }
-        .toggle-item input:checked::after {
-            content: "✓"; position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%); color: var(--c-mid); font-size: 14px; font-weight: bold;
-        }
-
+        .toggle-item input:checked::after { content: "✓"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--c-mid); font-size: 14px; font-weight: bold; }
         .quick-volume { display: none; flex-direction: column; align-items: center; gap: 15px; width: 280px; margin-top: 20px; background: none; border: none; }
         .running .quick-volume { display: flex; }
         .vol-icon-svg { width: 48px; height: 48px; cursor: pointer; fill: var(--c-mid); transition: fill 0.2s, transform 0.1s; }
         .vol-icon-svg:active { transform: scale(0.9); }
         .vol-muted { fill: var(--c-text); opacity: 0.4; }
-
         .vol-slider-row { width: 100%; display: flex; flex-direction: column; gap: 5px; }
         .vol-slider-row label { font-size: 0.8rem; font-weight: bold; color: var(--c-mid); display: flex; justify-content: space-between; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-
         .settings-grid { display: grid; gap: 12px; margin-top: 0; text-align: left; background: var(--setting-bg); padding: 18px; border-radius: 30px; width: 100%; box-sizing: border-box; }
         .header-with-switch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
         .label-text { font-size: 0.85rem; color: var(--c-mid); font-weight: 800; }
         .collapsible-settings { background: var(--white); border-radius: 20px; max-height: 0; overflow: hidden; transition: all 0.3s ease-out; padding: 0 12px; opacity: 0; }
         .collapsible-settings.expanded { max-height: 400px; padding: 12px; opacity: 1; margin-top: 5px; }
-        
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--c-light); transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--c-mid); }
         input:checked + .slider:before { transform: translateX(18px); }
-
         .mode-switch { display: flex; background: var(--setting-bg); border-radius: 15px; padding: 4px; margin-bottom: 10px; }
         .mode-btn { flex: 1; padding: 10px; font-size: 0.85rem; background: transparent; color: var(--c-text); border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
         .mode-btn.active { background: var(--c-mid); color: var(--white); }
-        
         select { width: 100%; padding: 10px; border-radius: 12px; border: 1.5px solid var(--input-border); font-size: 0.9rem; color: var(--c-text); background: var(--input-bg); cursor: pointer; margin-bottom: 10px; }
         input[type="range"] { width: 100%; accent-color: var(--c-mid); cursor: pointer; }
-        
         .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
         .input-group input { width: 80px; padding: 8px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); }
-        
         #breathInputsWrapper { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .breath-inputs-item { text-align: center; }
         .breath-inputs-item small { display: block; font-size: 0.7rem; margin-bottom: 3px; opacity: 0.7; }
         .breath-inputs-item input { width: 100%; padding: 8px 2px; border-radius: 12px; border: 1.5px solid var(--input-border); text-align: center; color: var(--c-mid); font-weight: bold; background: var(--input-bg); box-sizing: border-box; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     </style>
 </head>
 <body onclick="initAudio()">
 
 <div id="update-toast" onclick="location.reload(true)">發現新版本，點擊此處更新 ✨</div>
-
 <div id="breathCircle"></div>
 
-<div class="container" id="appContainer">
-    <div class="folder-tabs" id="folderTabs">
-        <div class="tab tab-rose" onclick="setTheme('rose')" id="tab-rose"></div>
-        <div class="tab tab-purple" onclick="setTheme('purple')" id="tab-purple"></div>
-        <div class="tab tab-ocean" onclick="setTheme('ocean')" id="tab-ocean"></div>
-        <div class="tab tab-forest" onclick="setTheme('forest')" id="tab-forest"></div>
-    </div>
+<div class="folder-tabs" id="folderTabs">
+    <div class="tab tab-rose" onclick="setTheme('rose')" id="tab-rose"></div>
+    <div class="tab tab-purple" onclick="setTheme('purple')" id="tab-purple"></div>
+    <div class="tab tab-ocean" onclick="setTheme('ocean')" id="tab-ocean"></div>
+    <div class="tab tab-forest" onclick="setTheme('forest')" id="tab-forest"></div>
+</div>
 
+<div class="container" id="appContainer">
     <div class="running-content-wrapper">
         <div id="timerSection" class="timer-section">
             <div id="timerDisplay" class="timer-display">
@@ -219,10 +204,9 @@
                 </div>
             </div>
         </div>
-
         <div>
             <div class="header-with-switch">
-                <span class="label-text">🌬 呼吸引導</span>
+                <span class="label-text">🌬 呼呼吸引導</span>
                 <label class="switch"><input type="checkbox" id="breathToggle" onchange="toggleBreath()"><span class="slider"></span></label>
             </div>
             <div class="collapsible-settings" id="breathContainer">
@@ -233,7 +217,6 @@
                 </div>
             </div>
         </div>
-
         <div>
             <div class="header-with-switch">
                 <span class="label-text">🔊 聲音設置</span>
@@ -242,7 +225,6 @@
             <div class="collapsible-settings" id="soundSettingContainer">
                 <div class="sub-setting-item"><div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🎧 輸出模式</div><div class="mode-switch"><button class="mode-btn" id="modeEarphone" onclick="setMode('earphone')">耳機</button><button class="mode-btn" id="modeSpeaker" onclick="setMode('speaker')">喇叭</button></div></div>
                 <div class="sub-setting-item"><div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🎵 選擇音色</div><select id="soundType" onchange="handleSoundChange(this)"><option value="electronic">電子點擊 (經典)</option><option value="woodblock" selected>圓潤木魚 (推薦)</option><option value="kick">深沉大鼓 (低音)</option><option value="bell">清脆銅鈴 (高音)</option><option value="beep">數位嗶聲 (計時器)</option><option value="water">柔和水滴 (安靜)</option></select></div>
-                
                 <div class="sub-setting-item" style="margin-top: 10px;">
                     <div class="label-text" style="margin-bottom: 5px; opacity: 0.7;">🔈 節拍音量: <span id="volMetLabel">50</span>%</div>
                     <input type="range" id="volMetMain" min="0" max="100" value="50" oninput="updateMetVol(this.value)">
@@ -257,9 +239,9 @@
 </div>
 
 <script>
-    // 版本控制號
-    const APP_VERSION = "2026.01.10.2";
+    const APP_VERSION = "2026.01.10.4";
 
+    // 所有的 JavaScript 邏輯保持不變...
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js').then(reg => {
@@ -274,30 +256,17 @@
             }).catch(err => console.log('SW fail', err));
         });
     }
-
-    function checkVersion() {
-        const savedVersion = localStorage.getItem('app_version');
-        if (savedVersion && savedVersion !== APP_VERSION) {
-            showUpdateToast();
-        }
-        localStorage.setItem('app_version', APP_VERSION);
-    }
-
-    function showUpdateToast() {
-        document.getElementById('update-toast').style.display = 'block';
-    }
-
+    function checkVersion() { const savedVersion = localStorage.getItem('app_version'); if (savedVersion && savedVersion !== APP_VERSION) showUpdateToast(); localStorage.setItem('app_version', APP_VERSION); }
+    function showUpdateToast() { document.getElementById('update-toast').style.display = 'block'; }
     let audioCtx = null, timerID = null, clockInterval = null;
     let isRunning = false, isPaused = false, isMuted = false;
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null, debounceTimer = null;
     let wakeLock = null;
-    
     const bgMusic = new Audio();
     bgMusic.crossOrigin = "anonymous"; 
     bgMusic.src = 'https://res.cloudinary.com/dvbwcjpdu/video/upload/v1767812963/music_1_xih1u2.mp3';
     bgMusic.loop = true;
     bgMusic.preload = "auto";
-
     let bpm = parseInt(localStorage.getItem('runningBpm')) || 180;
     let volMet = parseInt(localStorage.getItem('volMet')) || 50;
     let volMus = parseInt(localStorage.getItem('volMus')) || 50;
@@ -309,10 +278,8 @@
     let soundSettingActive = localStorage.getItem('soundSettingActive') === 'true';
     let wakeLockEnabled = localStorage.getItem('wakeLockEnabled') !== 'false';
     let musicEnabled = localStorage.getItem('musicEnabled') === 'true';
-
     const SVG_SPEAKER = `<svg class="vol-icon-svg" viewBox="0 0 24 24"><path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.03,19.86 21,16.28 21,12C21,7.72 18.03,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/></svg>`;
     const SVG_MUTE = `<svg class="vol-icon-svg vol-muted" viewBox="0 0 24 24"><path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18.03,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.48,12.43 16.5,12.22 16.5,12Z"/></svg>`;
-
     window.onload = function() {
         checkVersion();
         document.getElementById('bpmValue').textContent = bpm;
@@ -342,69 +309,26 @@
         renderVolIcon();
         updateMusicVolume();
     };
-
     function renderVolIcon() { document.getElementById('volIconWrapper').innerHTML = isMuted ? SVG_MUTE : SVG_SPEAKER; }
     async function requestWakeLock() { if (!wakeLockEnabled) return; try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
     function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
-
     function updateMetVol(val) {
-        volMet = val;
-        document.getElementById('volMetMain').value = val;
-        document.getElementById('volMetFocus').value = val;
-        document.getElementById('volMetLabel').textContent = val;
-        document.getElementById('qMetVolLab').textContent = val;
-        
-        // 修正：增加調整時的試聽回饋
-        initAudio();
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => { 
-            // 如果沒在跑，就播一個試聽音；如果在跑，scheduler 會自動用新音量播下一個音
-            if (!isRunning || isPaused) {
-                // 強制試聽（暫時無視靜音，讓使用者確認音量）
-                const originalMute = isMuted;
-                isMuted = false;
-                playClick(audioCtx.currentTime);
-                isMuted = originalMute;
-            }
-        }, 50);
+        volMet = val; document.getElementById('volMetMain').value = val; document.getElementById('volMetFocus').value = val; document.getElementById('volMetLabel').textContent = val; document.getElementById('qMetVolLab').textContent = val;
+        initAudio(); if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => { if (!isRunning || isPaused) { const originalMute = isMuted; isMuted = false; playClick(audioCtx.currentTime); isMuted = originalMute; } }, 50);
         saveSettings();
     }
-
     function updateMusVol(val) {
-        volMus = val;
-        document.getElementById('volMusMain').value = val;
-        document.getElementById('volMusFocus').value = val;
-        document.getElementById('volMusLabel').textContent = val;
-        document.getElementById('qMusVolLab').textContent = val;
-        updateMusicVolume();
-        
-        // 修正：音樂試聽
-        if (musicEnabled && !isRunning) {
-            if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                if (bgMusic.paused) {
-                    bgMusic.play().then(() => {
-                        setTimeout(() => { if(!isRunning) bgMusic.pause(); }, 1500); // 試聽 1.5 秒
-                    }).catch(e => console.log("Music preview blocked"));
-                }
-            }, 100);
-        }
+        volMus = val; document.getElementById('volMusMain').value = val; document.getElementById('volMusFocus').value = val; document.getElementById('volMusLabel').textContent = val; document.getElementById('qMusVolLab').textContent = val;
+        updateMusicVolume(); if (musicEnabled && !isRunning) { if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { if (bgMusic.paused) { bgMusic.play().then(() => { setTimeout(() => { if(!isRunning) bgMusic.pause(); }, 1500); }).catch(e => console.log("Music preview blocked")); } }, 100); }
         saveSettings();
     }
-
-    function updateMusicVolume() {
-        const modeMultiplier = outputMode === 'speaker' ? 0.8 : 0.4;
-        bgMusic.volume = (volMus / 100) * modeMultiplier;
-        bgMusic.muted = isMuted;
-    }
-
+    function updateMusicVolume() { const modeMultiplier = outputMode === 'speaker' ? 0.8 : 0.4; bgMusic.volume = (volMus / 100) * modeMultiplier; bgMusic.muted = isMuted; }
     function playClick(time, isEndSound = false) {
         if (!audioCtx || isMuted) return;
-        const osc = audioCtx.createOscillator();
-        const envelope = audioCtx.createGain();
-        const modeMultiplier = outputMode === 'speaker' ? 1.0 : 0.15;
-        const gainValue = (volMet / 100) * modeMultiplier;
+        const osc = audioCtx.createOscillator(); const envelope = audioCtx.createGain();
+        const modeMultiplier = outputMode === 'speaker' ? 1.0 : 0.15; const gainValue = (volMet / 100) * modeMultiplier;
         let decay = 0.05, freq = 1000, type = 'sine';
         if (isEndSound) { freq = 660; type = 'sine'; decay = 0.3; } else {
             if(soundType==='woodblock'){freq=880; type='triangle'; decay=0.06;}
@@ -414,55 +338,27 @@
             else if(soundType==='water'){freq=1600; type='sine'; decay=0.03;}
             else if(soundType==='electronic'){freq=1200; type='sine'; decay=0.04;}
         }
-        osc.type = type; osc.frequency.setValueAtTime(freq, time);
-        envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(gainValue, time + 0.002); envelope.gain.exponentialRampToValueAtTime(0.001, time + decay);
-        osc.connect(envelope); envelope.connect(audioCtx.destination);
-        osc.start(time); osc.stop(time + decay + 0.1);
+        osc.type = type; osc.frequency.setValueAtTime(freq, time); envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(gainValue, time + 0.002); envelope.gain.exponentialRampToValueAtTime(0.001, time + decay);
+        osc.connect(envelope); envelope.connect(audioCtx.destination); osc.start(time); osc.stop(time + decay + 0.1);
     }
-
     function startRunning() {
         initAudio(); requestWakeLock();
         audioCtx.resume().then(() => {
-            isRunning = true; isPaused = false; secondsElapsed = 0;
-            refreshTimerUI(); nextTickTime = audioCtx.currentTime + 0.05; 
-            document.getElementById('timerSection').classList.add('active');
-            document.getElementById('appContainer').classList.add('running');
-            if (breathActive) startBreathAnimation();
-            if (musicEnabled) { updateMusicVolume(); bgMusic.currentTime = 0; bgMusic.play().catch(e => console.error(e)); }
-            scheduler(); if (clockInterval) clearInterval(clockInterval);
-            clockInterval = setInterval(updateClock, 1000); updateButtonUI();
+            isRunning = true; isPaused = false; secondsElapsed = 0; refreshTimerUI(); nextTickTime = audioCtx.currentTime + 0.05; 
+            document.getElementById('timerSection').classList.add('active'); document.getElementById('appContainer').classList.add('running');
+            document.getElementById('folderTabs').style.display = 'none';
+            if (breathActive) startBreathAnimation(); if (musicEnabled) { updateMusicVolume(); bgMusic.currentTime = 0; bgMusic.play().catch(e => console.error(e)); }
+            scheduler(); if (clockInterval) clearInterval(clockInterval); clockInterval = setInterval(updateClock, 1000); updateButtonUI();
         });
     }
-
-    function scheduler() {
-        if (!isRunning || isPaused) return;
-        while (nextTickTime < audioCtx.currentTime + 0.1) {
-            playClick(nextTickTime);
-            nextTickTime += 60.0 / bpm;
-        }
-        timerID = setTimeout(scheduler, 25);
-    }
-
-    function stopRunning() { 
-        isRunning = false; isPaused = false; releaseWakeLock(); clearTimeout(timerID); 
-        if (clockInterval) clearInterval(clockInterval); clockInterval = null; 
-        secondsElapsed = 0; document.getElementById('appContainer').classList.remove('running'); 
-        document.getElementById('timerSection').classList.remove('active'); 
-        document.getElementById('quickVolSlider').style.display = 'none';
-        stopBreathAnimation(); updateButtonUI(); 
-        bgMusic.pause(); bgMusic.currentTime = 0;
-    }
-
+    function scheduler() { if (!isRunning || isPaused) return; while (nextTickTime < audioCtx.currentTime + 0.1) { playClick(nextTickTime); nextTickTime += 60.0 / bpm; } timerID = setTimeout(scheduler, 25); }
+    function stopRunning() { isRunning = false; isPaused = false; releaseWakeLock(); clearTimeout(timerID); if (clockInterval) clearInterval(clockInterval); clockInterval = null; secondsElapsed = 0; document.getElementById('appContainer').classList.remove('running'); document.getElementById('timerSection').classList.remove('active'); document.getElementById('quickVolSlider').style.display = 'none'; document.getElementById('folderTabs').style.display = 'flex'; stopBreathAnimation(); updateButtonUI(); bgMusic.pause(); bgMusic.currentTime = 0; }
     function toggleBreath() { breathActive = document.getElementById('breathToggle').checked; const container = document.getElementById('breathContainer'); if (breathActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); }
     function toggleCountdown() { countdownActive = document.getElementById('countdownToggle').checked; const container = document.getElementById('countdownContainer'); if (countdownActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); }
     function toggleSoundSetting() { soundSettingActive = document.getElementById('soundSettingToggle').checked; const container = document.getElementById('soundSettingContainer'); if (soundSettingActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); }
-
     function saveSettings() {
-        wakeLockEnabled = document.getElementById('wakeLockToggle').checked;
-        musicEnabled = document.getElementById('musicToggle').checked;
-        localStorage.setItem('runningBpm', bpm); 
-        localStorage.setItem('volMet', volMet);
-        localStorage.setItem('volMus', volMus);
+        wakeLockEnabled = document.getElementById('wakeLockToggle').checked; musicEnabled = document.getElementById('musicToggle').checked;
+        localStorage.setItem('runningBpm', bpm); localStorage.setItem('volMet', volMet); localStorage.setItem('volMus', volMus);
         localStorage.setItem('runningSound', soundType); localStorage.setItem('runningMode', outputMode);
         localStorage.setItem('breathActive', breathActive); localStorage.setItem('runningTheme', currentTheme);
         localStorage.setItem('countdownActive', countdownActive); localStorage.setItem('soundSettingActive', soundSettingActive);
@@ -472,14 +368,10 @@
         localStorage.setItem('holdTime', document.getElementById('holdTime').value);
         localStorage.setItem('exhaleTime', document.getElementById('exhaleTime').value);
     }
-
     function setTheme(theme) {
-        currentTheme = theme; document.body.setAttribute('data-theme', theme);
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        const activeTab = document.getElementById('tab-' + theme); if(activeTab) activeTab.classList.add('active');
-        saveSettings();
+        currentTheme = theme; document.body.setAttribute('data-theme', theme); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const activeTab = document.getElementById('tab-' + theme); if(activeTab) activeTab.classList.add('active'); saveSettings();
     }
-
     function updateClock() { if (isRunning && !isPaused) { secondsElapsed++; refreshTimerUI(); if (countdownActive) { const targetSeconds = parseInt(document.getElementById('countdownMinutes').value) * 60; if (secondsElapsed >= targetSeconds) { const now = audioCtx.currentTime; playClick(now, true); playClick(now + 0.3, true); setTimeout(stopRunning, 1000); } } } }
     function refreshTimerUI() { const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60; const hG = document.getElementById('hGroup'); const tDisp = document.getElementById('timerDisplay'); if (hrs > 0) { hG.style.display = 'inline-block'; tDisp.classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; } else { hG.style.display = 'none'; tDisp.classList.remove('long-time'); } document.getElementById('m1').textContent = Math.floor(mins/10); document.getElementById('m2').textContent = mins%10; document.getElementById('s1').textContent = Math.floor(secs/10); document.getElementById('s2').textContent = secs%10; }
     function updateButtonUI() { const row = document.getElementById('initialBtnRow'); if (!isRunning) row.innerHTML = `<button class="btn-base btn-start" onclick="startRunning()">開始跑步</button>`; else if (isPaused) row.innerHTML = `<button class="btn-base btn-resume" onclick="resumeRunning()">繼續</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; }
