@@ -1,4 +1,4 @@
-const CACHE_NAME = 'running-metronome-v4'; // 每次更新 HTML 後請手動改這個編號
+const CACHE_NAME = 'running-metronome-v5'; // 每次更新 HTML 後請手動改這個編號
 const ASSETS = [
   './',
   './index.html',
