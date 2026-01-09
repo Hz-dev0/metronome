@@ -1,9 +1,9 @@
-const CACHE_NAME = 'running-metronome-v2026.01.4'; 
+const CACHE_NAME = 'running-metronome-v2026.01.5'; 
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  'https://cdn-icons-png.flaticon.com/512/3843/3843034.png',
+  './app.png',
   'https://res.cloudinary.com/dvbwcjpdu/video/upload/v1767812963/music_1_xih1u2.mp3'
 ];
 
