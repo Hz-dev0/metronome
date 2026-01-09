@@ -40,18 +40,20 @@
             display: none; cursor: pointer; animation: fadeInUp 0.5s ease;
         }
 
-        /* 絕對緊貼頂部 */
+        /* 標籤絕對貼緊頂部 */
         .folder-tabs { 
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
             display: flex; flex-direction: row; gap: 8px; z-index: 100; 
-            padding-top: 0; /* 移除內距確保貼邊 */
+            padding-top: 0; margin-top: 0;
         }
         .tab { 
             width: 40px; height: 15px; border-radius: 0 0 10px 10px; 
             cursor: pointer; border: none; opacity: 0.5; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; /* 只針對高度做動畫，移除寬度變動 */
         }
-        .tab.active { opacity: 1; height: 22px; width: 50px; }
+        /* 點選時只有 Y 位移（高度增加），寬度維持不變 */
+        .tab.active { opacity: 1; height: 26px; width: 40px; }
         .tab-rose { background-color: #D6B2BC; } 
         .tab-purple { background-color: #D6B8D3; } 
         .tab-ocean { background-color: #90B4D9; } 
@@ -62,13 +64,12 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.06); text-align: center; 
             width: 340px; transition: all 0.3s ease;
             z-index: 10; display: flex; flex-direction: column; align-items: center; position: relative; 
-            margin-top: 10px; /* 稍微推開避免視覺太擠 */
+            margin-top: 25px; 
         }
 
         .container.running { background: transparent; box-shadow: none; width: 100vw; height: 100vh; padding: 0; justify-content: space-evenly; border-radius: 0; margin-top: 0; }
         .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .switches-row { display: none !important; }
 
-        /* 其餘 CSS 保持不變 */
         .running-content-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; justify-content: center; }
         .running .running-content-wrapper { height: 90%; }
         .timer-section { display: none; width: 100%; }
@@ -239,12 +240,14 @@
 </div>
 
 <script>
-    const APP_VERSION = "2026.01.10.4";
+    // 增加版本號，讓 Service Worker 檢測到變化
+    const APP_VERSION = "2026.01.10.5";
 
-    // 所有的 JavaScript 邏輯保持不變...
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js').then(reg => {
+                // 強制檢查更新
+                reg.update();
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -256,8 +259,19 @@
             }).catch(err => console.log('SW fail', err));
         });
     }
-    function checkVersion() { const savedVersion = localStorage.getItem('app_version'); if (savedVersion && savedVersion !== APP_VERSION) showUpdateToast(); localStorage.setItem('app_version', APP_VERSION); }
-    function showUpdateToast() { document.getElementById('update-toast').style.display = 'block'; }
+
+    function checkVersion() {
+        const savedVersion = localStorage.getItem('app_version');
+        if (savedVersion && savedVersion !== APP_VERSION) {
+            showUpdateToast();
+        }
+        localStorage.setItem('app_version', APP_VERSION);
+    }
+
+    function showUpdateToast() {
+        document.getElementById('update-toast').style.display = 'block';
+    }
+
     let audioCtx = null, timerID = null, clockInterval = null;
     let isRunning = false, isPaused = false, isMuted = false;
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null, debounceTimer = null;
