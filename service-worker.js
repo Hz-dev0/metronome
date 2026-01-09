@@ -1,11 +1,13 @@
-const CACHE_NAME = 'running-metronome-v5'; // 每次更新 HTML 後請手動改這個編號
+const CACHE_NAME = 'running-metronome-v2026.01.10'; 
 const ASSETS = [
   './',
   './index.html',
-  'https://cdn-icons-png.flaticon.com/512/3843/3843034.png'
+  './manifest.json',
+  'https://cdn-icons-png.flaticon.com/512/3843/3843034.png',
+  'https://res.cloudinary.com/dvbwcjpdu/video/upload/v1767812963/music_1_xih1u2.mp3'
 ];
 
-// 1. 安裝階段：強制跳過等待，讓新的 SW 立即生效
+// 1. 安裝階段
 self.addEventListener('install', (e) => {
   self.skipWaiting(); 
   e.waitUntil(
@@ -13,27 +15,24 @@ self.addEventListener('install', (e) => {
   );
 });
 
-// 2. 激活階段：刪除所有不是當前 CACHE_NAME 的舊快取
+// 2. 激活階段
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('正在清理舊快取:', key);
+            console.log('清理舊快取:', key);
             return caches.delete(key);
           }
         })
       );
-    }).then(() => self.clients.claim()) // 讓新 SW 立即接管頁面
+    }).then(() => self.clients.claim())
   );
 });
 
 // 3. 抓取階段
 self.addEventListener('fetch', (e) => {
-  // 排除外部音樂網址，不進行快取攔截，確保抓到最新的
-  if (e.request.url.includes('cloudinary.com')) return;
-
   e.respondWith(
     caches.match(e.request).then((res) => {
       return res || fetch(e.request);
