@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>跑步節拍器</title>
     
     <link rel="manifest" href="./manifest.json">
@@ -30,6 +31,16 @@
             transition: background-color 0.3s; color: var(--c-text);
             overflow: hidden; position: relative;
         }
+
+        /* 更新提示框樣式 */
+        #update-toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--c-dark); color: white; padding: 12px 24px;
+            border-radius: 50px; font-size: 0.9rem; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000;
+            display: none; cursor: pointer; animation: fadeInUp 0.5s ease;
+        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
 
         .folder-tabs { position: absolute; left: 100%; top: 50px; display: flex; flex-direction: column; gap: 10px; z-index: 5; }
         .tab { width: 14px; height: 35px; border-radius: 0 6px 6px 0; cursor: pointer; border: none; opacity: 0.7; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
@@ -93,7 +104,6 @@
             transform: translate(-50%, -50%); color: var(--c-mid); font-size: 14px; font-weight: bold;
         }
 
-        /* 修改處：移除白框框背景 */
         .quick-volume { display: none; flex-direction: column; align-items: center; gap: 15px; width: 280px; margin-top: 20px; background: none; border: none; }
         .running .quick-volume { display: flex; }
         .vol-icon-svg { width: 48px; height: 48px; cursor: pointer; fill: var(--c-mid); transition: fill 0.2s, transform 0.1s; }
@@ -133,6 +143,8 @@
     </style>
 </head>
 <body onclick="initAudio()">
+
+<div id="update-toast" onclick="location.reload(true)">發現新版本，點擊此處更新 ✨</div>
 
 <div id="breathCircle"></div>
 
@@ -210,7 +222,7 @@
 
         <div>
             <div class="header-with-switch">
-                <span class="label-text">🌬 呼吸引導</span>
+                <span class="label-text">🌬 呼呼吸引導</span>
                 <label class="switch"><input type="checkbox" id="breathToggle" onchange="toggleBreath()"><span class="slider"></span></label>
             </div>
             <div class="collapsible-settings" id="breathContainer">
@@ -245,10 +257,36 @@
 </div>
 
 <script>
+    // 版本控制號 (每次改程式碼想強制使用者更新時，就把這個數字 +1)
+    const APP_VERSION = "2026.01.10.1";
+
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js').catch(err => console.log('SW fail', err));
+            navigator.serviceWorker.register('./service-worker.js').then(reg => {
+                // 檢查是否有等待中的更新
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showUpdateToast();
+                        }
+                    });
+                });
+            }).catch(err => console.log('SW fail', err));
         });
+    }
+
+    // 檢查版本號
+    function checkVersion() {
+        const savedVersion = localStorage.getItem('app_version');
+        if (savedVersion && savedVersion !== APP_VERSION) {
+            showUpdateToast();
+        }
+        localStorage.setItem('app_version', APP_VERSION);
+    }
+
+    function showUpdateToast() {
+        document.getElementById('update-toast').style.display = 'block';
     }
 
     let audioCtx = null, timerID = null, clockInterval = null;
@@ -278,6 +316,7 @@
     const SVG_MUTE = `<svg class="vol-icon-svg vol-muted" viewBox="0 0 24 24"><path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18.03,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.48,12.43 16.5,12.22 16.5,12Z"/></svg>`;
 
     window.onload = function() {
+        checkVersion();
         document.getElementById('bpmValue').textContent = bpm;
         document.getElementById('soundType').value = soundType;
         document.getElementById('volMetMain').value = volMet;
@@ -438,4 +477,3 @@
 </script>
 </body>
 </html>
-
