@@ -257,13 +257,12 @@
 </div>
 
 <script>
-    // 版本控制號 (每次改程式碼想強制使用者更新時，就把這個數字 +1)
-    const APP_VERSION = "2026.01.10.1";
+    // 版本控制號
+    const APP_VERSION = "2026.01.10.2";
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js').then(reg => {
-                // 檢查是否有等待中的更新
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -276,7 +275,6 @@
         });
     }
 
-    // 檢查版本號
     function checkVersion() {
         const savedVersion = localStorage.getItem('app_version');
         if (savedVersion && savedVersion !== APP_VERSION) {
@@ -356,10 +354,19 @@
         document.getElementById('volMetFocus').value = val;
         document.getElementById('volMetLabel').textContent = val;
         document.getElementById('qMetVolLab').textContent = val;
+        
+        // 修正：增加調整時的試聽回饋
+        initAudio();
         if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => { 
-            initAudio(); 
-            if (audioCtx && isRunning && !isPaused) playClick(audioCtx.currentTime); 
+            // 如果沒在跑，就播一個試聽音；如果在跑，scheduler 會自動用新音量播下一個音
+            if (!isRunning || isPaused) {
+                // 強制試聽（暫時無視靜音，讓使用者確認音量）
+                const originalMute = isMuted;
+                isMuted = false;
+                playClick(audioCtx.currentTime);
+                isMuted = originalMute;
+            }
         }, 50);
         saveSettings();
     }
@@ -371,6 +378,18 @@
         document.getElementById('volMusLabel').textContent = val;
         document.getElementById('qMusVolLab').textContent = val;
         updateMusicVolume();
+        
+        // 修正：音樂試聽
+        if (musicEnabled && !isRunning) {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (bgMusic.paused) {
+                    bgMusic.play().then(() => {
+                        setTimeout(() => { if(!isRunning) bgMusic.pause(); }, 1500); // 試聽 1.5 秒
+                    }).catch(e => console.log("Music preview blocked"));
+                }
+            }, 100);
+        }
         saveSettings();
     }
 
@@ -477,4 +496,3 @@
 </script>
 </body>
 </html>
-
