@@ -7,8 +7,7 @@
     <title>跑步節拍器</title>
     
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#D6B2BC">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" id="meta-theme-color" content="#F7EDEF"> <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3843/3843034.png">
 
@@ -40,20 +39,16 @@
             display: none; cursor: pointer; animation: fadeInUp 0.5s ease;
         }
 
-        /* 標籤絕對貼緊頂部 */
         .folder-tabs { 
             position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: row; gap: 8px; z-index: 100; 
-            padding-top: 0; margin-top: 0;
+            display: flex; flex-direction: row; gap: 8px; z-index: 100; padding-top: 0;
         }
         .tab { 
             width: 40px; height: 15px; border-radius: 0 0 10px 10px; 
             cursor: pointer; border: none; opacity: 0.5; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
-            transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; /* 只針對高度做動畫，移除寬度變動 */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: height 0.25s ease, opacity 0.2s;
         }
-        /* 點選時只有 Y 位移（高度增加），寬度維持不變 */
-        .tab.active { opacity: 1; height: 26px; width: 40px; }
+        .tab.active { opacity: 1; height: 26px; width: 40px; } /* 確保 width 跟 .tab 一樣，只有 height 會變 */
         .tab-rose { background-color: #D6B2BC; } 
         .tab-purple { background-color: #D6B8D3; } 
         .tab-ocean { background-color: #90B4D9; } 
@@ -69,7 +64,6 @@
 
         .container.running { background: transparent; box-shadow: none; width: 100vw; height: 100vh; padding: 0; justify-content: space-evenly; border-radius: 0; margin-top: 0; }
         .running .folder-tabs, .running .bpm-controls-wrapper, .running .settings-grid, .running .switches-row { display: none !important; }
-
         .running-content-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; justify-content: center; }
         .running .running-content-wrapper { height: 90%; }
         .timer-section { display: none; width: 100%; }
@@ -240,14 +234,13 @@
 </div>
 
 <script>
-    // 增加版本號，讓 Service Worker 檢測到變化
-    const APP_VERSION = "2026.01.10.5";
+    const APP_VERSION = "2026.01.2";
 
+    // Service Worker 註冊與更新邏輯
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./service-worker.js').then(reg => {
-                // 強制檢查更新
-                reg.update();
+                reg.update(); // 強制檢查更新
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
                     newWorker.addEventListener('statechange', () => {
@@ -262,16 +255,12 @@
 
     function checkVersion() {
         const savedVersion = localStorage.getItem('app_version');
-        if (savedVersion && savedVersion !== APP_VERSION) {
-            showUpdateToast();
-        }
+        if (savedVersion && savedVersion !== APP_VERSION) showUpdateToast();
         localStorage.setItem('app_version', APP_VERSION);
     }
+    function showUpdateToast() { document.getElementById('update-toast').style.display = 'block'; }
 
-    function showUpdateToast() {
-        document.getElementById('update-toast').style.display = 'block';
-    }
-
+    // 音訊與狀態變數
     let audioCtx = null, timerID = null, clockInterval = null;
     let isRunning = false, isPaused = false, isMuted = false;
     let secondsElapsed = 0, nextTickTime = 0, clickTimer = null, debounceTimer = null;
@@ -281,6 +270,8 @@
     bgMusic.src = 'https://res.cloudinary.com/dvbwcjpdu/video/upload/v1767812963/music_1_xih1u2.mp3';
     bgMusic.loop = true;
     bgMusic.preload = "auto";
+
+    // 從本地存儲加載設定
     let bpm = parseInt(localStorage.getItem('runningBpm')) || 180;
     let volMet = parseInt(localStorage.getItem('volMet')) || 50;
     let volMus = parseInt(localStorage.getItem('volMus')) || 50;
@@ -292,8 +283,10 @@
     let soundSettingActive = localStorage.getItem('soundSettingActive') === 'true';
     let wakeLockEnabled = localStorage.getItem('wakeLockEnabled') !== 'false';
     let musicEnabled = localStorage.getItem('musicEnabled') === 'true';
+
     const SVG_SPEAKER = `<svg class="vol-icon-svg" viewBox="0 0 24 24"><path d="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.03,19.86 21,16.28 21,12C21,7.72 18.03,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.29 16.5,13.77 16.5,12M3,9V15H7L12,20V4L7,9H3Z"/></svg>`;
     const SVG_MUTE = `<svg class="vol-icon-svg vol-muted" viewBox="0 0 24 24"><path d="M12,4L9.91,6.09L12,8.18M4.27,3L3,4.27L7.73,9H3V15H7L12,20V13.27L16.25,17.53C15.58,18.04 14.83,18.46 14,18.7V20.77C15.38,20.45 16.63,19.82 17.68,18.96L19.73,21L21,19.73L12,10.73M19,12C19,12.94 18.8,13.82 18.46,14.64L19.97,16.15C20.62,14.91 21,13.5 21,12C21,7.72 18.03,4.14 14,3.23V5.29C16.89,6.15 19,8.83 19,12M16.5,12C16.5,10.23 15.5,8.71 14,7.97V10.18L16.45,12.63C16.48,12.43 16.5,12.22 16.5,12Z"/></svg>`;
+
     window.onload = function() {
         checkVersion();
         document.getElementById('bpmValue').textContent = bpm;
@@ -318,27 +311,55 @@
         if (soundSettingActive) document.getElementById('soundSettingContainer').classList.add('expanded');
         document.getElementById('wakeLockToggle').checked = wakeLockEnabled;
         document.getElementById('musicToggle').checked = musicEnabled;
-        setTheme(currentTheme);
+        setTheme(currentTheme); // 這邊會觸發狀態列顏色初始化
         updateModeUI();
         renderVolIcon();
         updateMusicVolume();
     };
+
+    // --- 主題與狀態列核心代碼 ---
+    function setTheme(theme) {
+        currentTheme = theme;
+        document.body.setAttribute('data-theme', theme);
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        const activeTab = document.getElementById('tab-' + theme);
+        if(activeTab) activeTab.classList.add('active');
+
+        // 設定對應底色給狀態列 (theme-color)
+        const themeToStatusBarColor = {
+            'rose': '#F7EDEF',
+            'purple': '#FCF4FC',
+            'ocean': '#E3F2FD',
+            'forest': '#F1F8E9'
+        };
+        const metaThemeColor = document.getElementById('meta-theme-color');
+        if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', themeToStatusBarColor[theme]);
+        }
+
+        saveSettings();
+    }
+
     function renderVolIcon() { document.getElementById('volIconWrapper').innerHTML = isMuted ? SVG_MUTE : SVG_SPEAKER; }
     async function requestWakeLock() { if (!wakeLockEnabled) return; try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {} }
     function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release().then(() => { wakeLock = null; }); } }
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+    
     function updateMetVol(val) {
         volMet = val; document.getElementById('volMetMain').value = val; document.getElementById('volMetFocus').value = val; document.getElementById('volMetLabel').textContent = val; document.getElementById('qMetVolLab').textContent = val;
         initAudio(); if (debounceTimer) clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => { if (!isRunning || isPaused) { const originalMute = isMuted; isMuted = false; playClick(audioCtx.currentTime); isMuted = originalMute; } }, 50);
         saveSettings();
     }
+
     function updateMusVol(val) {
         volMus = val; document.getElementById('volMusMain').value = val; document.getElementById('volMusFocus').value = val; document.getElementById('volMusLabel').textContent = val; document.getElementById('qMusVolLab').textContent = val;
         updateMusicVolume(); if (musicEnabled && !isRunning) { if (debounceTimer) clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { if (bgMusic.paused) { bgMusic.play().then(() => { setTimeout(() => { if(!isRunning) bgMusic.pause(); }, 1500); }).catch(e => console.log("Music preview blocked")); } }, 100); }
         saveSettings();
     }
+
     function updateMusicVolume() { const modeMultiplier = outputMode === 'speaker' ? 0.8 : 0.4; bgMusic.volume = (volMus / 100) * modeMultiplier; bgMusic.muted = isMuted; }
+
     function playClick(time, isEndSound = false) {
         if (!audioCtx || isMuted) return;
         const osc = audioCtx.createOscillator(); const envelope = audioCtx.createGain();
@@ -355,6 +376,7 @@
         osc.type = type; osc.frequency.setValueAtTime(freq, time); envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(gainValue, time + 0.002); envelope.gain.exponentialRampToValueAtTime(0.001, time + decay);
         osc.connect(envelope); envelope.connect(audioCtx.destination); osc.start(time); osc.stop(time + decay + 0.1);
     }
+
     function startRunning() {
         initAudio(); requestWakeLock();
         audioCtx.resume().then(() => {
@@ -365,11 +387,13 @@
             scheduler(); if (clockInterval) clearInterval(clockInterval); clockInterval = setInterval(updateClock, 1000); updateButtonUI();
         });
     }
+
     function scheduler() { if (!isRunning || isPaused) return; while (nextTickTime < audioCtx.currentTime + 0.1) { playClick(nextTickTime); nextTickTime += 60.0 / bpm; } timerID = setTimeout(scheduler, 25); }
     function stopRunning() { isRunning = false; isPaused = false; releaseWakeLock(); clearTimeout(timerID); if (clockInterval) clearInterval(clockInterval); clockInterval = null; secondsElapsed = 0; document.getElementById('appContainer').classList.remove('running'); document.getElementById('timerSection').classList.remove('active'); document.getElementById('quickVolSlider').style.display = 'none'; document.getElementById('folderTabs').style.display = 'flex'; stopBreathAnimation(); updateButtonUI(); bgMusic.pause(); bgMusic.currentTime = 0; }
     function toggleBreath() { breathActive = document.getElementById('breathToggle').checked; const container = document.getElementById('breathContainer'); if (breathActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); if (isRunning && breathActive && !isPaused) startBreathAnimation(); else stopBreathAnimation(); }
     function toggleCountdown() { countdownActive = document.getElementById('countdownToggle').checked; const container = document.getElementById('countdownContainer'); if (countdownActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); }
     function toggleSoundSetting() { soundSettingActive = document.getElementById('soundSettingToggle').checked; const container = document.getElementById('soundSettingContainer'); if (soundSettingActive) container.classList.add('expanded'); else container.classList.remove('expanded'); saveSettings(); }
+
     function saveSettings() {
         wakeLockEnabled = document.getElementById('wakeLockToggle').checked; musicEnabled = document.getElementById('musicToggle').checked;
         localStorage.setItem('runningBpm', bpm); localStorage.setItem('volMet', volMet); localStorage.setItem('volMus', volMus);
@@ -382,10 +406,7 @@
         localStorage.setItem('holdTime', document.getElementById('holdTime').value);
         localStorage.setItem('exhaleTime', document.getElementById('exhaleTime').value);
     }
-    function setTheme(theme) {
-        currentTheme = theme; document.body.setAttribute('data-theme', theme); document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        const activeTab = document.getElementById('tab-' + theme); if(activeTab) activeTab.classList.add('active'); saveSettings();
-    }
+
     function updateClock() { if (isRunning && !isPaused) { secondsElapsed++; refreshTimerUI(); if (countdownActive) { const targetSeconds = parseInt(document.getElementById('countdownMinutes').value) * 60; if (secondsElapsed >= targetSeconds) { const now = audioCtx.currentTime; playClick(now, true); playClick(now + 0.3, true); setTimeout(stopRunning, 1000); } } } }
     function refreshTimerUI() { const hrs = Math.floor(secondsElapsed / 3600); const mins = Math.floor((secondsElapsed % 3600) / 60); const secs = secondsElapsed % 60; const hG = document.getElementById('hGroup'); const tDisp = document.getElementById('timerDisplay'); if (hrs > 0) { hG.style.display = 'inline-block'; tDisp.classList.add('long-time'); document.getElementById('h1').textContent = Math.floor(hrs/10); document.getElementById('h2').textContent = hrs%10; } else { hG.style.display = 'none'; tDisp.classList.remove('long-time'); } document.getElementById('m1').textContent = Math.floor(mins/10); document.getElementById('m2').textContent = mins%10; document.getElementById('s1').textContent = Math.floor(secs/10); document.getElementById('s2').textContent = secs%10; }
     function updateButtonUI() { const row = document.getElementById('initialBtnRow'); if (!isRunning) row.innerHTML = `<button class="btn-base btn-start" onclick="startRunning()">開始跑步</button>`; else if (isPaused) row.innerHTML = `<button class="btn-base btn-resume" onclick="resumeRunning()">繼續</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; else row.innerHTML = `<button class="btn-base btn-pause" onclick="pauseRunning()">暫停</button><button class="btn-base btn-stop" onclick="stopRunning()">停止</button>`; }
