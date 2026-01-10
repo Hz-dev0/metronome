@@ -1,4 +1,4 @@
-const CACHE_NAME = 'running-metronome-v2026.01.5'; 
+const CACHE_NAME = 'running-metronome-v2026.01.6'; 
 const ASSETS = [
   './',
   './index.html',
