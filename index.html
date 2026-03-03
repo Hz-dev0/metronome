@@ -109,32 +109,37 @@
             animation: fadeInUp 0.5s ease;
         }
 
-        /* ===== 主題分頁標籤（框框右側垂直排列） ===== */
+        /* ===== 主題分頁標籤（框框下方水平排列） ===== */
         .folder-tabs {
             position: absolute;
-            top: 50%;
-            left: calc(50% + 170px + 6px);
-            transform: translateY(-50%);
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 8px;
             z-index: 100;
         }
         .tab {
-            width: 15px;
-            height: 40px;
-            border-radius: 0 10px 10px 0;
+            width: 40px;
+            height: 12px;
+            border-radius: 0 0 10px 10px;
             cursor: pointer;
             border: none;
-            opacity: 0.5;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
-            transition: width 0.25s ease, opacity 0.2s;
+            opacity: 0.4;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            /* transition 只加在 height，且不影響其他 tab */
+            transition: height 0.25s ease;
+            transform-origin: top center;
         }
-        .tab.active  { opacity: 1; width: 26px; }
-        .tab-rose    { background-color: #D6B2BC; }
-        .tab-purple  { background-color: #D6B8D3; }
-        .tab-ocean   { background-color: #90B4D9; }
-        .tab-forest  { background-color: #ACC490; }
+        .tab.active {
+            opacity: 1;
+            height: 28px;
+        }
+        .tab-rose   { background-color: #D6B2BC; }
+        .tab-purple { background-color: #D6B8D3; }
+        .tab-ocean  { background-color: #90B4D9; }
+        .tab-forest { background-color: #ACC490; }
 
         /* ===== 主容器 ===== */
         .container {
@@ -531,13 +536,6 @@
 <div id="offline-toast">⚠️ 初次使用請連網，背景音樂無法播放</div>
 <div id="breathCircle"></div>
 
-<!-- 主題分頁 -->
-<div class="folder-tabs" id="folderTabs">
-    <div class="tab tab-rose"   id="tab-rose"   onclick="setTheme('rose')"></div>
-    <div class="tab tab-purple" id="tab-purple" onclick="setTheme('purple')"></div>
-    <div class="tab tab-ocean"  id="tab-ocean"  onclick="setTheme('ocean')"></div>
-    <div class="tab tab-forest" id="tab-forest" onclick="setTheme('forest')"></div>
-</div>
 
 <!-- 主容器 -->
 <div class="container" id="appContainer">
@@ -695,6 +693,15 @@
         </div>
 
     </div><!-- /settings-grid -->
+
+    <!-- 主題分頁（框框底部往下長出） -->
+    <div class="folder-tabs" id="folderTabs">
+        <div class="tab tab-rose"   id="tab-rose"   onclick="setTheme('rose')"></div>
+        <div class="tab tab-purple" id="tab-purple" onclick="setTheme('purple')"></div>
+        <div class="tab tab-ocean"  id="tab-ocean"  onclick="setTheme('ocean')"></div>
+        <div class="tab tab-forest" id="tab-forest" onclick="setTheme('forest')"></div>
+    </div>
+
 </div><!-- /container -->
 
 <script>
