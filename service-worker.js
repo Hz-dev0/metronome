@@ -1,4 +1,4 @@
-const CACHE_NAME = 'running-metronome-v2026.03.03.1';
+const CACHE_NAME = 'running-metronome-v2026.03.03a';
 const MUSIC_CACHE_NAME = 'running-metronome-music'; // 獨立、永不刪除
 const ASSETS = [
   './',
